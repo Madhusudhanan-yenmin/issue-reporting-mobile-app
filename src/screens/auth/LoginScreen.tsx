@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   SafeAreaView,
+  Keyboard,
 } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { loginUser, clearAuthError } from '../../store/slices/authSlice';
@@ -49,6 +50,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleLogin = () => {
     if (validate()) {
+      Keyboard.dismiss();
       dispatch(loginUser({ email, password }));
     }
   };
@@ -56,7 +58,7 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardContainer}
       >
         <ScrollView
@@ -99,6 +101,28 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               isPassword
               autoCapitalize="none"
             />
+
+            <View style={styles.linksRow}>
+              <TouchableOpacity
+                onPress={() => {
+                  dispatch(clearAuthError());
+                  navigation.navigate('ForgotPassword');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => {
+                  dispatch(clearAuthError());
+                  navigation.navigate('ResetPassword');
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.forgotPasswordText}>Reset Password?</Text>
+              </TouchableOpacity>
+            </View>
 
             <CustomButton
               title="Sign In"
@@ -182,6 +206,17 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     marginTop: Spacing.md,
+  },
+  linksRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.md,
+    marginTop: -Spacing.xs,
+  },
+  forgotPasswordText: {
+    color: Colors.primary,
+    fontSize: Typography.size.sm,
+    fontWeight: Typography.weight.bold,
   },
   registerContainer: {
     flexDirection: 'row',

@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   SafeAreaView,
+  Keyboard,
 } from 'react-native';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { registerUser, clearAuthError } from '../../store/slices/authSlice';
@@ -72,6 +73,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
 
   const handleRegister = async () => {
     if (validate()) {
+      Keyboard.dismiss();
       const resultAction = await dispatch(
         registerUser({ name, email, mobile, password, role: 'USER' })
       );
@@ -85,7 +87,7 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.safeContainer}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardContainer}
       >
         <ScrollView
