@@ -35,9 +35,22 @@ export const OfficerDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const { user } = useAppSelector((state) => state.auth);
 
   const [search, setSearch] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [refreshing, setRefreshing] = useState(false);
+  const [isFirstLoad, setIsFirstLoad] = useState(true);
+
+  // Debounce search input to avoid triggering APIs on every keystroke
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearch(searchInput);
+    }, 400);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchInput]);
 
   const loadData = useCallback(
     (isRefresh = false) => {
@@ -52,6 +65,7 @@ export const OfficerDashboardScreen: React.FC<Props> = ({ navigation }) => {
       if (isRefresh) setRefreshing(true);
       dispatch(fetchIssues(filters)).finally(() => {
         if (isRefresh) setRefreshing(false);
+        setIsFirstLoad(false);
       });
     },
     [dispatch, search, selectedCategory, selectedStatus]
@@ -83,8 +97,8 @@ export const OfficerDashboardScreen: React.FC<Props> = ({ navigation }) => {
           style={styles.searchInput}
           placeholder="Search assigned tickets..."
           placeholderTextColor={Colors.placeholder}
-          value={search}
-          onChangeText={setSearch}
+          value={searchInput}
+          onChangeText={setSearchInput}
         />
       </View>
 
@@ -146,7 +160,7 @@ export const OfficerDashboardScreen: React.FC<Props> = ({ navigation }) => {
       </View>
 
       {/* Issues List */}
-      {loading && !refreshing ? (
+      {loading && isFirstLoad && !refreshing ? (
         <LoadingIndicator message="Loading your assignments..." />
       ) : (
         <FlatList
