@@ -259,16 +259,66 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      uploadSelectedImage(result.assets[0].uri);
+      const asset = result.assets[0];
+      uploadSelectedImage(asset.uri, asset.fileName || undefined, asset.mimeType || undefined);
     }
   };
 
-  const uploadSelectedImage = async (uri: string) => {
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'Permission to access camera is required!');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      uploadSelectedImage(asset.uri, asset.fileName || undefined, asset.mimeType || undefined);
+    }
+  };
+
+  const handleImageAttachment = () => {
+    Alert.alert(
+      'Attach Image',
+      'Select the source for your grievance photo:',
+      [
+        {
+          text: 'Take Photo 📸',
+          onPress: takePhoto,
+        },
+        {
+          text: 'Choose from Gallery 🖼️',
+          onPress: pickImage,
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const uploadSelectedImage = async (uri: string, assetName?: string, assetType?: string) => {
     try {
       setUploadingImage(true);
-      const filename = uri.split('/').pop() || 'upload.jpg';
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : `image/jpeg`;
+      
+      let filename = assetName || uri.split('/').pop() || 'upload.jpg';
+      let type = assetType || 'image/jpeg';
+
+      // Ensure extension exists
+      if (!filename.includes('.')) {
+        const ext = type.split('/').pop() || 'jpg';
+        filename = `${filename}.${ext}`;
+      }
+
+      // Sanitize special/percent-encoded characters from Content URIs
+      filename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
 
       const formData = new FormData();
       // Need cast to any because react-native's FormData typing differs slightly from DOM's
@@ -350,7 +400,11 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
   const uploadVoiceMessage = async (uri: string) => {
     try {
       setUploadingVoice(true);
-      const filename = uri.split('/').pop() || 'voice.m4a';
+      let filename = uri.split('/').pop() || 'voice.m4a';
+      
+      // Sanitize special/percent-encoded characters from Content URIs
+      filename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+      
       const type = 'audio/m4a';
 
       const formData = new FormData();
@@ -439,15 +493,25 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      uploadSelectedVideo(result.assets[0].uri);
+      const asset = result.assets[0];
+      uploadSelectedVideo(asset.uri, asset.fileName || undefined, asset.mimeType || undefined);
     }
   };
 
-  const uploadSelectedVideo = async (uri: string) => {
+  const uploadSelectedVideo = async (uri: string, assetName?: string, assetType?: string) => {
     try {
       setUploadingVideo(true);
-      const filename = uri.split('/').pop() || 'video.mp4';
-      const type = 'video/mp4';
+      let filename = assetName || uri.split('/').pop() || 'video.mp4';
+      let type = assetType || 'video/mp4';
+
+      // Ensure extension exists
+      if (!filename.includes('.')) {
+        const ext = type.split('/').pop() || 'mp4';
+        filename = `${filename}.${ext}`;
+      }
+
+      // Sanitize special/percent-encoded characters from Content URIs
+      filename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
 
       const formData = new FormData();
       formData.append('file', {
@@ -640,7 +704,7 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
               {images.length < 5 && (
                 <TouchableOpacity
                   style={styles.uploadTrigger}
-                  onPress={pickImage}
+                  onPress={handleImageAttachment}
                   disabled={uploadingImage}
                 >
                   {uploadingImage ? (

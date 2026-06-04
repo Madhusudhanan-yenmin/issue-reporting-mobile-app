@@ -17,6 +17,12 @@ export interface Issue {
   resolutionImages?: string[];
   voiceUrl?: string;
   videoUrl?: string;
+  feedback?: {
+    id: string;
+    rating: number;
+    comment: string;
+    createdAt: string;
+  };
   createdAt: string;
   updatedAt: string;
 }

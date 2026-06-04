@@ -166,16 +166,65 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
-      uploadResImage(result.assets[0].uri);
+      const asset = result.assets[0];
+      uploadResImage(asset.uri, asset.fileName || undefined, asset.mimeType || undefined);
     }
   };
 
-  const uploadResImage = async (uri: string) => {
+  const takeResolutionPhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'Permission to access camera is required!');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      uploadResImage(asset.uri, asset.fileName || undefined, asset.mimeType || undefined);
+    }
+  };
+
+  const handleResolutionImageAttachment = () => {
+    Alert.alert(
+      'Attach Resolution Photo',
+      'Select the source for your resolution proof photo:',
+      [
+        {
+          text: 'Take Photo 📸',
+          onPress: takeResolutionPhoto,
+        },
+        {
+          text: 'Choose from Gallery 🖼️',
+          onPress: pickResolutionImage,
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const uploadResImage = async (uri: string, assetName?: string, assetType?: string) => {
     try {
       setUploadingResImage(true);
-      const filename = uri.split('/').pop() || 'upload.jpg';
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : `image/jpeg`;
+      let filename = assetName || uri.split('/').pop() || 'upload.jpg';
+      let type = assetType || 'image/jpeg';
+
+      // Ensure extension exists
+      if (!filename.includes('.')) {
+        const ext = type.split('/').pop() || 'jpg';
+        filename = `${filename}.${ext}`;
+      }
+
+      // Sanitize special/percent-encoded characters from Content URIs
+      filename = filename.replace(/[^a-zA-Z0-9._-]/g, '_');
 
       const formData = new FormData();
       formData.append('file', { uri, name: filename, type } as any);
@@ -395,7 +444,9 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
 
           {/* Officer Details */}
           <View style={styles.officerRow}>
-            <Text style={styles.label}>Assigned Officer: </Text>
+            <Text style={styles.label}>
+              {selectedIssue.status === 'REOPENED' ? 'Last assigned Office: ' : 'Assigned Officer: '}
+            </Text>
             <Text style={styles.officerName}>
               {selectedIssue.officerId?.name || 'Unassigned'}
             </Text>
@@ -406,11 +457,20 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
             {user?.role === 'ADMIN' && (
               <View style={styles.adminActionRow}>
                 <CustomButton
-                  title="Assign Officer"
+                  title={
+                    selectedIssue.status === 'REOPENED'
+                      ? 'Assigned Officer for reopend issue'
+                      : selectedIssue.officerId
+                      ? 'Change the officer'
+                      : 'Assign Officer'
+                  }
                   onPress={() => setAssignModalVisible(true)}
                   variant="outline"
                   size="small"
-                  style={styles.actionBtn}
+                  style={[
+                    styles.actionBtn,
+                    (selectedIssue.status === 'REOPENED' || selectedIssue.officerId) && { height: undefined, minHeight: 40, paddingVertical: 4 }
+                  ]}
                 />
                 <CustomButton
                   title="Set Priority"
@@ -511,6 +571,38 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
                   </TouchableOpacity>
                 ))}
               </ScrollView>
+            )}
+          </View>
+        )}
+
+        {/* User Feedback & Rating */}
+        {selectedIssue.status === 'CLOSED' && selectedIssue.feedback && (
+          <View style={[styles.sectionCard, { borderColor: Colors.warning + '50' }]}>
+            <Text style={[styles.sectionTitle, { color: Colors.warning }]}>User Feedback & Rating</Text>
+            <View style={styles.feedbackStarRow}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Text
+                  key={star}
+                  style={[
+                    styles.feedbackStarText,
+                    { color: star <= selectedIssue.feedback!.rating ? Colors.warning : Colors.textMuted },
+                  ]}
+                >
+                  ★
+                </Text>
+              ))}
+              <Text style={styles.feedbackRatingLabel}>
+                ({selectedIssue.feedback.rating} / 5)
+              </Text>
+            </View>
+            {selectedIssue.feedback.comment ? (
+              <Text style={styles.feedbackComment}>
+                "{selectedIssue.feedback.comment}"
+              </Text>
+            ) : (
+              <Text style={[styles.feedbackComment, { color: Colors.textMuted }]}>
+                No written remarks submitted.
+              </Text>
             )}
           </View>
         )}
@@ -646,7 +738,7 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
               {resolutionImages.length < 3 && (
                 <TouchableOpacity
                   style={styles.resAddBtn}
-                  onPress={pickResolutionImage}
+                  onPress={handleResolutionImageAttachment}
                   disabled={uploadingResImage}
                 >
                   {uploadingResImage ? (
@@ -1056,5 +1148,27 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 14,
     textAlign: 'center',
+  },
+  feedbackStarRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  feedbackStarText: {
+    fontSize: 24,
+    marginRight: Spacing.xs,
+  },
+  feedbackRatingLabel: {
+    color: Colors.textSecondary,
+    fontSize: Typography.size.sm,
+    fontWeight: Typography.weight.bold,
+    marginLeft: Spacing.sm,
+  },
+  feedbackComment: {
+    color: Colors.textPrimary,
+    fontSize: Typography.size.base,
+    fontStyle: 'italic',
+    lineHeight: Typography.lineHeight.normal * Typography.size.base,
+    marginTop: Spacing.xs,
   },
 });
