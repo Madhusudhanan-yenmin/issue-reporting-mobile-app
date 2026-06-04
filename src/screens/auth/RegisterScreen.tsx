@@ -14,7 +14,8 @@ import { useAppDispatch, useAppSelector } from '../../store';
 import { registerUser, clearAuthError } from '../../store/slices/authSlice';
 import { CustomButton } from '../../components/CustomButton';
 import { CustomInput } from '../../components/CustomInput';
-import { Colors, Typography, Spacing } from '../../theme';
+import { Colors, Typography, Spacing, Radii } from '../../theme';
+import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/types';
 
@@ -94,6 +95,18 @@ export const RegisterScreen: React.FC<Props> = ({ navigation }) => {
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => {
+              dispatch(clearAuthError());
+              navigation.goBack();
+            }}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="chevron-back" size={20} color={Colors.primary} />
+            <Text style={styles.backText}>Back</Text>
+          </TouchableOpacity>
+
           <View style={styles.formContainer}>
             <Text style={styles.title}>Create Account</Text>
             <Text style={styles.subtitle}>Sign up to start reporting issues</Text>
@@ -245,5 +258,23 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: Typography.size.sm,
     fontWeight: Typography.weight.bold,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginBottom: Spacing.lg,
+    paddingVertical: Spacing.sm - 2,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+  },
+  backText: {
+    color: Colors.textSecondary,
+    fontSize: Typography.size.sm,
+    fontWeight: Typography.weight.medium,
+    marginLeft: Spacing.xs,
   },
 });

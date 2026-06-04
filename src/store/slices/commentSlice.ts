@@ -30,7 +30,17 @@ export const fetchComments = createAsyncThunk(
   async (issueId: string, thunkAPI) => {
     try {
       const response = await api.get(`/comments/${issueId}`);
-      return response.data;
+      return response.data.map((data: any) => ({
+        _id: data._id,
+        issueId: data.issueId,
+        text: data.message,
+        author: data.userId && typeof data.userId === 'object' ? {
+          _id: data.userId._id,
+          name: data.userId.name,
+          role: data.userId.role,
+        } : { _id: '', name: 'Anonymous', role: 'USER' },
+        createdAt: data.createdAt,
+      }));
     } catch (err: any) {
       return thunkAPI.rejectWithValue(err.response?.data?.message || 'Failed to load comments');
     }
@@ -41,8 +51,19 @@ export const postComment = createAsyncThunk(
   'comment/postComment',
   async ({ issueId, text }: { issueId: string; text: string }, thunkAPI) => {
     try {
-      const response = await api.post('/comments', { issueId, text });
-      return response.data;
+      const response = await api.post('/comments', { issueId, message: text });
+      const data = response.data;
+      return {
+        _id: data._id,
+        issueId: data.issueId,
+        text: data.message,
+        author: data.userId && typeof data.userId === 'object' ? {
+          _id: data.userId._id,
+          name: data.userId.name,
+          role: data.userId.role,
+        } : { _id: '', name: 'Anonymous', role: 'USER' },
+        createdAt: data.createdAt,
+      };
     } catch (err: any) {
       const message = err.response?.data?.message || 'Failed to post comment';
       return thunkAPI.rejectWithValue(Array.isArray(message) ? message[0] : message);

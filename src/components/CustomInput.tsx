@@ -35,12 +35,17 @@ export const CustomInput: React.FC<CustomInputProps> = ({
       <View
         style={[
           styles.inputContainer,
+          props.multiline ? styles.inputContainerMultiline : styles.inputContainerSingleLine,
           isFocused && styles.focused,
           error ? styles.errorBorder : null,
         ]}
       >
         <TextInput
-          style={[styles.input, style]}
+          style={[
+            styles.input,
+            props.multiline ? styles.inputMultiline : styles.inputSingleLine,
+            style,
+          ]}
           placeholderTextColor={Colors.placeholder}
           secureTextEntry={isPassword && !showPassword}
           onFocus={() => setIsFocused(true)}
@@ -82,8 +87,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.inputBorder,
     borderRadius: Radii.md,
-    height: 48,
     paddingHorizontal: Spacing.md,
+  },
+  inputContainerSingleLine: {
+    height: 48,
+  },
+  inputContainerMultiline: {
+    minHeight: 100,
+    alignItems: 'flex-start',
+    paddingVertical: Spacing.sm,
   },
   focused: {
     borderColor: Colors.inputBorderFocused,
@@ -95,8 +107,14 @@ const styles = StyleSheet.create({
     flex: 1,
     color: Colors.textPrimary,
     fontSize: Typography.size.base,
-    height: '100%',
     padding: 0, // Reset default padding in Android
+  },
+  inputSingleLine: {
+    height: '100%',
+  },
+  inputMultiline: {
+    textAlignVertical: 'top',
+    minHeight: 80,
   },
   toggleButton: {
     paddingLeft: Spacing.sm,

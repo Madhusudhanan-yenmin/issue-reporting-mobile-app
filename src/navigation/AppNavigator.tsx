@@ -7,6 +7,9 @@ import { loadSession, logout } from '../store/slices/authSlice';
 import { LoadingIndicator } from '../components/LoadingIndicator';
 import { Colors } from '../theme';
 import { setLogoutCallback } from '../services/api';
+import { TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
 
 // Navigation Param Lists
 import {
@@ -179,6 +182,11 @@ export const AppNavigator = () => {
             shadowColor: 'transparent',
           },
           headerTintColor: Colors.textPrimary,
+          headerLeft: ({ onPress }) => (
+            <TouchableOpacity onPress={onPress} style={styles.headerBackButton} activeOpacity={0.7}>
+              <Ionicons name="chevron-back" size={22} color={Colors.primary} />
+            </TouchableOpacity>
+          ),
           cardStyle: { backgroundColor: Colors.background },
         }}
       >
@@ -229,3 +237,20 @@ export const AppNavigator = () => {
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  headerBackButton: {
+    marginLeft: 16,
+    marginRight: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingRight: 2,
+  },
+});
+

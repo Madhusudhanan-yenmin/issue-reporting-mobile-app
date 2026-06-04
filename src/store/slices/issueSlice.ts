@@ -15,6 +15,8 @@ export interface Issue {
   officerId: any;
   resolutionNotes?: string;
   resolutionImages?: string[];
+  voiceUrl?: string;
+  videoUrl?: string;
   createdAt: string;
   updatedAt: string;
 }
