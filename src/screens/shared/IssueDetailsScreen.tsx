@@ -11,8 +11,12 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Linking,
+  Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Audio, Video, ResizeMode } from 'expo-av';
 import { useAppDispatch, useAppSelector } from '../../store';
 import {
   fetchIssueById,
@@ -53,6 +57,26 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [resolutionImages, setResolutionImages] = useState<string[]>([]);
   const [uploadingResImage, setUploadingResImage] = useState(false);
+
+  // Image Preview Lightbox State
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // Voice Playback State
+  const [playbackSound, setPlaybackSound] = useState<Audio.Sound | null>(null);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [playbackStatus, setPlaybackStatus] = useState<any>({
+    positionMillis: 0,
+    durationMillis: 0,
+  });
+  const [loadingAudio, setLoadingAudio] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      if (playbackSound) {
+        playbackSound.unloadAsync();
+      }
+    };
+  }, [playbackSound]);
 
   const loadData = useCallback(() => {
     dispatch(fetchIssueById(issueId));
@@ -154,7 +178,12 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
       const response = await api.post('/upload/single', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setResolutionImages((prev) => [...prev, response.data.url]);
+      const imageUrl = response.data.secure_url;
+      if (imageUrl) {
+        setResolutionImages((prev) => [...prev, imageUrl]);
+      } else {
+        throw new Error('Image URL not returned by server');
+      }
     } catch {
       Alert.alert('Upload Failed', 'Failed to upload resolution image.');
     } finally {
@@ -203,6 +232,79 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
     });
   };
 
+  const openLocationInMap = (locationStr: string) => {
+    if (!locationStr) return;
+    const coordsRegex = /^([+-]?\d+\.\d+),\s*([+-]?\d+\.\d+)/;
+    const match = locationStr.match(coordsRegex);
+
+    if (match) {
+      const lat = match[1];
+      const lng = match[2];
+
+      const scheme = Platform.select({
+        ios: `maps://0,0?q=${lat},${lng}`,
+        android: `geo:0,0?q=${lat},${lng}`,
+        default: `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`
+      });
+
+      Linking.openURL(scheme).catch(() => {
+        Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`);
+      });
+    } else {
+      const encodedAddress = encodeURIComponent(locationStr);
+      Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`);
+    }
+  };
+
+  const handlePlayVoice = async () => {
+    if (!selectedIssue?.voiceUrl) return;
+    try {
+      if (isPlayingAudio && playbackSound) {
+        await playbackSound.pauseAsync();
+        setIsPlayingAudio(false);
+        return;
+      }
+
+      if (playbackSound) {
+        await playbackSound.playAsync();
+        setIsPlayingAudio(true);
+        return;
+      }
+
+      setLoadingAudio(true);
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri: selectedIssue.voiceUrl },
+        { shouldPlay: true },
+        (status) => {
+          if (status.isLoaded) {
+            setPlaybackStatus({
+              positionMillis: status.positionMillis,
+              durationMillis: status.durationMillis || 0,
+            });
+            if (status.didJustFinish) {
+              setIsPlayingAudio(false);
+              newSound.stopAsync();
+            }
+          }
+        }
+      );
+      setPlaybackSound(newSound);
+      setIsPlayingAudio(true);
+    } catch (err: any) {
+      Alert.alert('Playback Error', 'Failed to play the voice message.');
+    } finally {
+      setLoadingAudio(false);
+    }
+  };
+
+  const formatAudioTime = (millis: number) => {
+    if (!millis) return '0:00';
+    const totalSeconds = millis / 1000;
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   if (issueLoading && !selectedIssue) {
     return <LoadingIndicator message="Loading issue details..." fullScreen />;
   }
@@ -220,7 +322,12 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+      >
+        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {/* Ticket Title & ID */}
         <View style={styles.sectionCard}>
           <View style={styles.row}>
@@ -233,6 +340,31 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
           <Text style={styles.title}>{selectedIssue.title}</Text>
           <Text style={styles.description}>{selectedIssue.description}</Text>
+
+          {/* Voice Player */}
+          {selectedIssue.voiceUrl ? (
+            <View style={styles.voicePlayerCard}>
+              <TouchableOpacity
+                style={styles.voicePlayIconBtn}
+                onPress={handlePlayVoice}
+                disabled={loadingAudio}
+              >
+                {loadingAudio ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.voicePlayIconText}>
+                    {isPlayingAudio ? '⏸' : '▶'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+              <View style={styles.voiceProgressInfo}>
+                <Text style={styles.voicePlayerTitle}>Voice Description Note</Text>
+                <Text style={styles.voiceTimeText}>
+                  {formatAudioTime(playbackStatus.positionMillis)} / {formatAudioTime(playbackStatus.durationMillis)}
+                </Text>
+              </View>
+            </View>
+          ) : null}
 
           {/* Details Row */}
           <View style={styles.detailsGrid}>
@@ -248,9 +380,11 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
             </View>
             <View style={styles.detailCol}>
               <Text style={styles.label}>Location</Text>
-              <Text style={styles.value} numberOfLines={2}>
-                {selectedIssue.location}
-              </Text>
+              <TouchableOpacity onPress={() => openLocationInMap(selectedIssue.location)} activeOpacity={0.7}>
+                <Text style={styles.locationValueLink} numberOfLines={3}>
+                  📍 {selectedIssue.location}
+                </Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -328,11 +462,33 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
             <Text style={styles.sectionTitle}>Grievance Images</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesScroll}>
               {selectedIssue.images.map((img, idx) => (
-                <Image key={idx} source={{ uri: img }} style={styles.issueImage} />
+                <TouchableOpacity key={idx} onPress={() => setPreviewImage(img)} activeOpacity={0.8} style={styles.imageContainer}>
+                  <Image source={{ uri: img }} style={styles.issueImage} />
+                  <View style={styles.eyeIconOverlay}>
+                    <Text style={styles.eyeIconText}>👁</Text>
+                  </View>
+                </TouchableOpacity>
               ))}
             </ScrollView>
           </View>
         )}
+
+        {/* Grievance Video */}
+        {selectedIssue.videoUrl ? (
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>Grievance Video Note</Text>
+            <Video
+              source={{ uri: selectedIssue.videoUrl }}
+              rate={1.0}
+              volume={1.0}
+              isMuted={false}
+              resizeMode={ResizeMode.CONTAIN}
+              shouldPlay={false}
+              useNativeControls
+              style={styles.detailsVideoPlayer}
+            />
+          </View>
+        ) : null}
 
         {/* Resolution Details */}
         {selectedIssue.resolutionNotes && (
@@ -342,7 +498,12 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
             {selectedIssue.resolutionImages && selectedIssue.resolutionImages.length > 0 && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesScroll}>
                 {selectedIssue.resolutionImages.map((img, idx) => (
-                  <Image key={idx} source={{ uri: img }} style={styles.issueImage} />
+                  <TouchableOpacity key={idx} onPress={() => setPreviewImage(img)} activeOpacity={0.8} style={styles.imageContainer}>
+                    <Image source={{ uri: img }} style={styles.issueImage} />
+                    <View style={styles.eyeIconOverlay}>
+                      <Text style={styles.eyeIconText}>👁</Text>
+                    </View>
+                  </TouchableOpacity>
                 ))}
               </ScrollView>
             )}
@@ -392,7 +553,8 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* MODALS */}
 
@@ -503,6 +665,26 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Image Lightbox Preview Modal */}
+      <Modal visible={!!previewImage} transparent animationType="fade" onRequestClose={() => setPreviewImage(null)}>
+        <View style={styles.lightboxBackdrop}>
+          <TouchableOpacity style={styles.lightboxCloseArea} activeOpacity={1} onPress={() => setPreviewImage(null)}>
+            <View style={styles.lightboxContent}>
+              {previewImage && (
+                <Image
+                  source={{ uri: previewImage }}
+                  style={styles.lightboxImage}
+                  resizeMode="contain"
+                />
+              )}
+              <TouchableOpacity style={styles.lightboxCloseBtn} onPress={() => setPreviewImage(null)}>
+                <Text style={styles.lightboxCloseBtnText}>✕ Close</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -511,6 +693,9 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  keyboardAvoidingView: {
+    flex: 1,
   },
   container: {
     padding: Spacing.md,
@@ -592,6 +777,12 @@ const styles = StyleSheet.create({
     fontSize: Typography.size.sm + 1,
     fontWeight: Typography.weight.bold,
   },
+  locationValueLink: {
+    color: Colors.primaryLight,
+    fontSize: Typography.size.sm + 1,
+    fontWeight: Typography.weight.bold,
+    textDecorationLine: 'underline',
+  },
   officerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -629,7 +820,6 @@ const styles = StyleSheet.create({
     width: 140,
     height: 100,
     borderRadius: Radii.sm,
-    marginRight: Spacing.sm,
     resizeMode: 'cover',
   },
   emptyText: {
@@ -742,5 +932,113 @@ const styles = StyleSheet.create({
   },
   modalActionBtn: {
     flex: 1,
+  },
+  voicePlayerCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: Radii.md,
+    padding: Spacing.base,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+    marginBottom: Spacing.md,
+  },
+  voicePlayIconBtn: {
+    backgroundColor: Colors.primary,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Shadows.sm,
+  },
+  voicePlayIconText: {
+    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  voiceProgressInfo: {
+    flex: 1,
+    marginLeft: Spacing.md,
+  },
+  voicePlayerTitle: {
+    color: Colors.textPrimary,
+    fontSize: Typography.size.sm + 1,
+    fontWeight: Typography.weight.bold,
+    marginBottom: 4,
+  },
+  voiceTimeText: {
+    color: Colors.textSecondary,
+    fontSize: Typography.size.xs + 1,
+  },
+  detailsVideoPlayer: {
+    width: '100%',
+    height: 220,
+    borderRadius: Radii.md,
+    backgroundColor: '#000000',
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+  },
+  lightboxBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lightboxCloseArea: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lightboxContent: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  lightboxImage: {
+    width: '95%',
+    height: '80%',
+  },
+  lightboxCloseBtn: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  lightboxCloseBtnText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: Typography.size.sm,
+  },
+  imageContainer: {
+    position: 'relative',
+    marginRight: Spacing.sm,
+  },
+  eyeIconOverlay: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  eyeIconText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    lineHeight: 14,
+    textAlign: 'center',
   },
 });

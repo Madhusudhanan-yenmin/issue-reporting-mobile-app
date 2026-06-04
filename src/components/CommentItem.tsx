@@ -1,6 +1,6 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Colors, Typography, Spacing, Radii } from '../theme';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Colors, Typography, Spacing, Radii, Shadows } from '../theme';
 import { Comment } from '../store/slices/commentSlice';
 
 interface CommentItemProps {
@@ -8,6 +8,17 @@ interface CommentItemProps {
 }
 
 export const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  useEffect(() => {
+    if (showTooltip) {
+      const timer = setTimeout(() => {
+        setShowTooltip(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [showTooltip]);
+
   const formatTime = (dateString: string) => {
     try {
       const date = new Date(dateString);
@@ -33,11 +44,34 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
     }
   };
 
+  const authorName = comment.author?.name || 'Anonymous';
+  const isNameLong = authorName.length > 20;
+
   return (
     <View style={styles.container}>
+      {showTooltip && (
+        <View style={styles.tooltipContainer}>
+          <Text style={styles.tooltipText}>{authorName}</Text>
+          <View style={styles.tooltipArrow} />
+        </View>
+      )}
       <View style={styles.header}>
         <View style={styles.authorRow}>
-          <Text style={styles.authorName}>{comment.author?.name || 'Anonymous'}</Text>
+          {isNameLong ? (
+            <TouchableOpacity
+              onPress={() => setShowTooltip(!showTooltip)}
+              style={styles.authorNameWrapper}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.authorName} numberOfLines={1} ellipsizeMode="tail">
+                {authorName}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <Text style={styles.authorName}>
+              {authorName}
+            </Text>
+          )}
           <View
             style={[
               styles.badge,
@@ -79,11 +113,17 @@ const styles = StyleSheet.create({
   authorRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: Spacing.sm,
   },
   authorName: {
     color: Colors.textPrimary,
     fontSize: Typography.size.sm + 1,
     fontWeight: Typography.weight.bold,
+    flexShrink: 1,
+  },
+  authorNameWrapper: {
+    flexShrink: 1,
     marginRight: Spacing.sm,
   },
   badge: {
@@ -103,5 +143,38 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: Typography.size.base,
     lineHeight: Typography.lineHeight.normal * Typography.size.base,
+  },
+  tooltipContainer: {
+    position: 'absolute',
+    bottom: '100%',
+    left: Spacing.md,
+    backgroundColor: 'rgba(35, 39, 58, 0.95)',
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+    borderRadius: Radii.sm,
+    paddingVertical: Spacing.xs + 2,
+    paddingHorizontal: Spacing.sm + 2,
+    zIndex: 10,
+    marginBottom: 6,
+    maxWidth: 250,
+    ...Shadows.md,
+  },
+  tooltipText: {
+    color: Colors.textPrimary,
+    fontSize: Typography.size.xs + 1,
+    fontWeight: Typography.weight.bold,
+  },
+  tooltipArrow: {
+    position: 'absolute',
+    bottom: -5,
+    left: 20,
+    width: 0,
+    height: 0,
+    borderLeftWidth: 6,
+    borderLeftColor: 'transparent',
+    borderRightWidth: 6,
+    borderRightColor: 'transparent',
+    borderTopWidth: 6,
+    borderTopColor: 'rgba(35, 39, 58, 0.95)',
   },
 });
