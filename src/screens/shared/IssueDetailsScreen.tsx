@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -61,6 +61,8 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   // Image Preview Lightbox State
   const [previewImage, setPreviewImage] = useState<string | null>(null);
 
+  const scrollViewRef = useRef<ScrollView>(null);
+
   // Voice Playback State
   const [playbackSound, setPlaybackSound] = useState<Audio.Sound | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -106,6 +108,9 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
     dispatch(postComment({ issueId, text: commentText.trim() })).then((action) => {
       if (postComment.fulfilled.match(action)) {
         setCommentText('');
+        setTimeout(() => {
+          scrollViewRef.current?.scrollToEnd({ animated: true });
+        }, 100);
       } else {
         Alert.alert('Error', (action.payload as string) || 'Failed to post comment');
       }
@@ -327,7 +332,7 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
         style={styles.keyboardAvoidingView}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
-        <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scrollViewRef} contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
         {/* Ticket Title & ID */}
         <View style={styles.sectionCard}>
           <View style={styles.row}>
@@ -547,6 +552,11 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
               placeholderTextColor={Colors.placeholder}
               value={commentText}
               onChangeText={setCommentText}
+              onFocus={() => {
+                setTimeout(() => {
+                  scrollViewRef.current?.scrollToEnd({ animated: true });
+                }, 150);
+              }}
             />
             <TouchableOpacity style={styles.sendBtn} onPress={handlePostComment}>
               <Text style={styles.sendBtnText}>Post</Text>
@@ -619,7 +629,7 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Resolve Complaint</Text>
             <TextInput
-              style={[styles.commentInput, styles.resNotesInput]}
+              style={styles.resNotesInput}
               placeholder="Describe resolution details..."
               placeholderTextColor={Colors.placeholder}
               value={resolutionNotes}
@@ -895,6 +905,12 @@ const styles = StyleSheet.create({
   },
   resNotesInput: {
     height: 100,
+    backgroundColor: Colors.inputBg,
+    borderWidth: 1,
+    borderColor: Colors.inputBorder,
+    borderRadius: Radii.md,
+    color: Colors.textPrimary,
+    fontSize: Typography.size.base,
     textAlignVertical: 'top',
     padding: Spacing.sm,
     marginBottom: Spacing.md,

@@ -14,7 +14,7 @@ const getBaseUrl = () => {
     }
   }
   // Use the local laptop IP directly for physical phone connections
-  return 'http://192.168.0.110:3000/api';
+  return 'http://10.12.64.175:3000/api';
 };
 
 const baseUrl = getBaseUrl();
