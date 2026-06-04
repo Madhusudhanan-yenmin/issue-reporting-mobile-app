@@ -42,7 +42,8 @@ export const fetchComments = createAsyncThunk(
         createdAt: data.createdAt,
       }));
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message || 'Failed to load comments');
+      const message = err.response?.data?.message || 'Failed to load comments';
+      return thunkAPI.rejectWithValue(Array.isArray(message) ? message[0] : message);
     }
   },
 );

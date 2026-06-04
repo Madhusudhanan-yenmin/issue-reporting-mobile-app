@@ -66,7 +66,8 @@ export const fetchIssues = createAsyncThunk(
       const response = await api.get('/issues', { params: filters });
       return response.data; // { data: Issue[], total: number, page: number, limit: number }
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message || 'Failed to fetch issues');
+      const message = err.response?.data?.message || 'Failed to fetch issues';
+      return thunkAPI.rejectWithValue(Array.isArray(message) ? message[0] : message);
     }
   },
 );
@@ -79,7 +80,8 @@ export const fetchIssueById = createAsyncThunk(
       const response = await api.get(`/issues/${id}`);
       return response.data;
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message || 'Failed to load issue details');
+      const message = err.response?.data?.message || 'Failed to load issue details';
+      return thunkAPI.rejectWithValue(Array.isArray(message) ? message[0] : message);
     }
   },
 );
@@ -106,7 +108,8 @@ export const assignOfficer = createAsyncThunk(
       const response = await api.patch(`/issues/${id}/assign`, { officerId });
       return response.data;
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message || 'Failed to assign officer');
+      const message = err.response?.data?.message || 'Failed to assign officer';
+      return thunkAPI.rejectWithValue(Array.isArray(message) ? message[0] : message);
     }
   },
 );
@@ -119,7 +122,8 @@ export const updatePriority = createAsyncThunk(
       const response = await api.patch(`/issues/${id}/priority`, { priority });
       return response.data;
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message || 'Failed to update priority');
+      const message = err.response?.data?.message || 'Failed to update priority';
+      return thunkAPI.rejectWithValue(Array.isArray(message) ? message[0] : message);
     }
   },
 );
@@ -158,7 +162,8 @@ export const fetchActivities = createAsyncThunk(
       const response = await api.get(`/issues/${id}/activities`);
       return response.data;
     } catch (err: any) {
-      return thunkAPI.rejectWithValue(err.response?.data?.message || 'Failed to load timeline logs');
+      const message = err.response?.data?.message || 'Failed to load timeline logs';
+      return thunkAPI.rejectWithValue(Array.isArray(message) ? message[0] : message);
     }
   },
 );
