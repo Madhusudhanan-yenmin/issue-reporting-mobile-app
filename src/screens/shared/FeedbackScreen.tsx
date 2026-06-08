@@ -11,6 +11,7 @@ import {
 import { useAppDispatch, useAppSelector } from '../../store';
 import { submitFeedback, clearFeedback } from '../../store/slices/feedbackSlice';
 import { updateStatus, fetchIssues } from '../../store/slices/issueSlice';
+import { showToast } from '../../store/slices/uiSlice';
 import { CustomButton } from '../../components/CustomButton';
 import { Colors, Typography, Spacing, Radii } from '../../theme';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -39,24 +40,15 @@ export const FeedbackScreen: React.FC<Props> = ({ route, navigation }) => {
           (feedbackAction) => {
             if (submitFeedback.fulfilled.match(feedbackAction)) {
               dispatch(fetchIssues()); // Refresh issues list
-              Alert.alert('Thank You', 'Your feedback has been submitted, and the issue is officially closed.', [
-                {
-                  text: 'OK',
-                  onPress: () => {
-                    navigation.navigate('UserHome');
-                  },
-                },
-              ]);
+              dispatch(showToast({ message: 'Your feedback has been submitted, and the issue is officially closed.', type: 'success' }));
+              navigation.navigate('UserHome');
             } else {
-              Alert.alert(
-                'Feedback Failed',
-                (feedbackAction.payload as string) || 'Failed to submit rating'
-              );
+              dispatch(showToast({ message: (feedbackAction.payload as string) || 'Failed to submit rating', type: 'error' }));
             }
           }
         );
       } else {
-        Alert.alert('Error', (action.payload as string) || 'Failed to close the issue');
+        dispatch(showToast({ message: (action.payload as string) || 'Failed to close the issue', type: 'error' }));
       }
     });
   };
