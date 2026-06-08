@@ -77,17 +77,32 @@ const UserTabNavigator = () => (
     <UserTab.Screen
       name="UserDashboard"
       component={UserDashboardScreen}
-      options={{ title: 'Dashboard' }}
+      options={{
+        title: 'Dashboard',
+        tabBarIcon: ({ color, size, focused }) => (
+          <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+        ),
+      }}
     />
     <UserTab.Screen
       name="CreateIssue"
       component={CreateIssueScreen}
-      options={{ title: 'Report Issue' }}
+      options={{
+        title: 'Report Issue',
+        tabBarIcon: ({ color, size, focused }) => (
+          <Ionicons name={focused ? 'add-circle' : 'add-circle-outline'} size={size} color={color} />
+        ),
+      }}
     />
     <UserTab.Screen
       name="UserProfile"
       component={UserProfileScreen}
-      options={{ title: 'Profile' }}
+      options={{
+        title: 'Profile',
+        tabBarIcon: ({ color, size, focused }) => (
+          <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+        ),
+      }}
     />
   </UserTab.Navigator>
 );
@@ -112,17 +127,32 @@ const AdminTabNavigator = () => (
     <AdminTab.Screen
       name="AdminDashboard"
       component={AdminDashboardScreen}
-      options={{ title: 'Grievances' }}
+      options={{
+        title: 'Grievances',
+        tabBarIcon: ({ color, size, focused }) => (
+          <Ionicons name={focused ? 'list' : 'list-outline'} size={size} color={color} />
+        ),
+      }}
     />
     <AdminTab.Screen
       name="CreateOfficer"
       component={CreateOfficerScreen}
-      options={{ title: 'Add Officer' }}
+      options={{
+        title: 'Add Officer',
+        tabBarIcon: ({ color, size, focused }) => (
+          <Ionicons name={focused ? 'person-add' : 'person-add-outline'} size={size} color={color} />
+        ),
+      }}
     />
     <AdminTab.Screen
       name="AdminProfile"
       component={AdminProfileScreen}
-      options={{ title: 'Profile' }}
+      options={{
+        title: 'Profile',
+        tabBarIcon: ({ color, size, focused }) => (
+          <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+        ),
+      }}
     />
   </AdminTab.Navigator>
 );
@@ -147,12 +177,22 @@ const OfficerTabNavigator = () => (
     <OfficerTab.Screen
       name="OfficerDashboard"
       component={OfficerDashboardScreen}
-      options={{ title: 'My Work' }}
+      options={{
+        title: 'My Work',
+        tabBarIcon: ({ color, size, focused }) => (
+          <Ionicons name={focused ? 'clipboard' : 'clipboard-outline'} size={size} color={color} />
+        ),
+      }}
     />
     <OfficerTab.Screen
       name="OfficerProfile"
       component={OfficerProfileScreen}
-      options={{ title: 'Profile' }}
+      options={{
+        title: 'Profile',
+        tabBarIcon: ({ color, size, focused }) => (
+          <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+        ),
+      }}
     />
   </OfficerTab.Navigator>
 );

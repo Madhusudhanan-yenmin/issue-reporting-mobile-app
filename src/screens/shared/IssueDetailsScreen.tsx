@@ -14,6 +14,7 @@ import {
   Linking,
   Platform,
   KeyboardAvoidingView,
+  Keyboard,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio, Video, ResizeMode } from 'expo-av';
@@ -51,6 +52,8 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   const [officers, setOfficers] = useState<any[]>([]);
   const [assignModalVisible, setAssignModalVisible] = useState(false);
   const [priorityModalVisible, setPriorityModalVisible] = useState(false);
+  const [isCommentInputFocused, setIsCommentInputFocused] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   
   // Resolution Modal State
   const [resolveModalVisible, setResolveModalVisible] = useState(false);
@@ -79,6 +82,36 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
       }
     };
   }, [playbackSound]);
+
+  useEffect(() => {
+    const showSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => {
+        if (Platform.OS === 'android') {
+          // Provide 50px buffer to clear the keyboard layout safely
+          setKeyboardHeight(e.endCoordinates.height + 50);
+        }
+        if (isCommentInputFocused) {
+          setTimeout(() => {
+            scrollViewRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        }
+      }
+    );
+    const hideSubscription = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => {
+        if (Platform.OS === 'android') {
+          setKeyboardHeight(0);
+        }
+      }
+    );
+
+    return () => {
+      showSubscription.remove();
+      hideSubscription.remove();
+    };
+  }, [isCommentInputFocused]);
 
   const loadData = useCallback(() => {
     dispatch(fetchIssueById(issueId));
@@ -645,16 +678,20 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
               value={commentText}
               onChangeText={setCommentText}
               onFocus={() => {
+                setIsCommentInputFocused(true);
                 setTimeout(() => {
                   scrollViewRef.current?.scrollToEnd({ animated: true });
-                }, 150);
+                }, 100);
               }}
+              onBlur={() => setIsCommentInputFocused(false)}
             />
             <TouchableOpacity style={styles.sendBtn} onPress={handlePostComment}>
               <Text style={styles.sendBtnText}>Post</Text>
             </TouchableOpacity>
           </View>
         </View>
+
+        <View style={{ height: keyboardHeight }} />
         </ScrollView>
       </KeyboardAvoidingView>
 
