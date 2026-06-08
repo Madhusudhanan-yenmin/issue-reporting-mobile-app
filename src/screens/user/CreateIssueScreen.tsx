@@ -549,6 +549,47 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
+  const recordVideo = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Denied', 'Permission to access camera is required to record a video!');
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ['videos'],
+      allowsEditing: true,
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      uploadSelectedVideo(asset.uri, asset.fileName || undefined, asset.mimeType || undefined);
+    }
+  };
+
+  const handleVideoAttachment = () => {
+    Alert.alert(
+      'Attach Video',
+      'Select the source for your grievance video:',
+      [
+        {
+          text: 'Record Video 📹',
+          onPress: recordVideo,
+        },
+        {
+          text: 'Choose from Gallery 🖼️',
+          onPress: pickVideo,
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   const uploadSelectedVideo = async (uri: string, assetName?: string, assetType?: string) => {
     try {
       setUploadingVideo(true);
@@ -825,7 +866,7 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
             
             {/* If no video selected */}
             {!videoUri && !uploadingVideo && (
-              <TouchableOpacity style={styles.videoSelectButton} onPress={pickVideo}>
+              <TouchableOpacity style={styles.videoSelectButton} onPress={handleVideoAttachment}>
                 <Text style={styles.videoSelectButtonText}>🎥 Add Video Attachment</Text>
               </TouchableOpacity>
             )}
@@ -864,7 +905,7 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
           </View>
 
           <CustomButton
-            title="File Complaint"
+            title="Submit Complaint"
             onPress={handleSubmit}
             loading={loading}
             style={styles.submitButton}
