@@ -18,11 +18,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/types';
 import api from '../../services/api';
-import { useAppSelector } from '../../store';
+import { useAppDispatch, useAppSelector } from '../../store';
+import { showToast } from '../../store/slices/uiSlice';
 
 type Props = StackScreenProps<any, 'ResetPassword'>;
 
 export const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
+  const dispatch = useAppDispatch();
   const { isAuthenticated } = useAppSelector((state) => state.auth);
   const emailParam = route.params?.email || '';
   const isForgotPasswordFlow = route.params?.isForgotPasswordFlow ?? false;
@@ -110,24 +112,18 @@ export const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
         await api.post('/auth/reset-password', payload);
       }
 
-      Alert.alert(
-        'Success',
-        isDirectReset
+      dispatch(showToast({
+        message: isDirectReset
           ? 'Your password has been changed successfully!'
           : 'Your password has been reset successfully!',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              if (isAuthenticated) {
-                navigation.goBack();
-              } else {
-                (navigation.navigate as any)('Login');
-              }
-            },
-          },
-        ]
-      );
+        type: 'success'
+      }));
+
+      if (isAuthenticated) {
+        navigation.goBack();
+      } else {
+        (navigation.navigate as any)('Login');
+      }
     } catch (err: any) {
       const message = err.response?.data?.message || 'Failed to reset password. Please try again.';
       setError(Array.isArray(message) ? message[0] : message);

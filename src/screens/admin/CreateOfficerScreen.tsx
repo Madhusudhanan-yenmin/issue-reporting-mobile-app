@@ -17,6 +17,8 @@ import { CompositeScreenProps } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { AdminTabParamList, RootStackParamList } from '../../navigation/types';
 import api from '../../services/api';
+import { useAppDispatch } from '../../store';
+import { showToast } from '../../store/slices/uiSlice';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<AdminTabParamList, 'CreateOfficer'>,
@@ -24,6 +26,7 @@ type Props = CompositeScreenProps<
 >;
 
 export const CreateOfficerScreen: React.FC<Props> = ({ navigation }) => {
+  const dispatch = useAppDispatch();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [mobile, setMobile] = useState('');
@@ -83,22 +86,16 @@ export const CreateOfficerScreen: React.FC<Props> = ({ navigation }) => {
 
       await api.post('/auth/register', payload);
 
-      Alert.alert('Success', 'Officer account created successfully!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            setName('');
-            setEmail('');
-            setMobile('');
-            setPassword('');
-            setConfirmPassword('');
-            navigation.navigate('AdminDashboard');
-          },
-        },
-      ]);
+      dispatch(showToast({ message: 'Officer account created successfully!', type: 'success' }));
+      setName('');
+      setEmail('');
+      setMobile('');
+      setPassword('');
+      setConfirmPassword('');
+      navigation.navigate('AdminDashboard');
     } catch (err: any) {
       const message = err.response?.data?.message || 'Failed to create officer account';
-      Alert.alert('Error', Array.isArray(message) ? message[0] : message);
+      dispatch(showToast({ message: Array.isArray(message) ? message[0] : message, type: 'error' }));
     } finally {
       setLoading(false);
     }

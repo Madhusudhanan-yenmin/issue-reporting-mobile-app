@@ -28,6 +28,7 @@ import {
   clearSelectedIssue,
 } from '../../store/slices/issueSlice';
 import { fetchComments, postComment, clearComments } from '../../store/slices/commentSlice';
+import { showToast } from '../../store/slices/uiSlice';
 import { ActivityItem } from '../../components/ActivityItem';
 import { CommentItem } from '../../components/CommentItem';
 import { LoadingIndicator } from '../../components/LoadingIndicator';
@@ -145,7 +146,7 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
           scrollViewRef.current?.scrollToEnd({ animated: true });
         }, 100);
       } else {
-        Alert.alert('Error', (action.payload as string) || 'Failed to post comment');
+        dispatch(showToast({ message: (action.payload as string) || 'Failed to post comment', type: 'error' }));
       }
     });
   };
@@ -155,9 +156,9 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
       if (assignOfficer.fulfilled.match(action)) {
         setAssignModalVisible(false);
         dispatch(fetchActivities(issueId));
-        Alert.alert('Success', 'Officer assigned successfully!');
+        dispatch(showToast({ message: 'Officer assigned successfully!', type: 'success' }));
       } else {
-        Alert.alert('Error', (action.payload as string) || 'Failed to assign officer');
+        dispatch(showToast({ message: (action.payload as string) || 'Failed to assign officer', type: 'error' }));
       }
     });
   };
@@ -167,9 +168,9 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
       if (updatePriority.fulfilled.match(action)) {
         setPriorityModalVisible(false);
         dispatch(fetchActivities(issueId));
-        Alert.alert('Success', 'Priority updated successfully!');
+        dispatch(showToast({ message: 'Priority updated successfully!', type: 'success' }));
       } else {
-        Alert.alert('Error', (action.payload as string) || 'Failed to update priority');
+        dispatch(showToast({ message: (action.payload as string) || 'Failed to update priority', type: 'error' }));
       }
     });
   };
@@ -178,9 +179,9 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
     dispatch(updateStatus({ id: issueId, status: 'IN_PROGRESS' })).then((action) => {
       if (updateStatus.fulfilled.match(action)) {
         dispatch(fetchActivities(issueId));
-        Alert.alert('Success', 'Work status updated to In Progress.');
+        dispatch(showToast({ message: 'Work status updated to In Progress.', type: 'success' }));
       } else {
-        Alert.alert('Error', (action.payload as string) || 'Failed to start work');
+        dispatch(showToast({ message: (action.payload as string) || 'Failed to start work', type: 'error' }));
       }
     });
   };
@@ -319,9 +320,9 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
         setResolutionNotes('');
         setResolutionImages([]);
         dispatch(fetchActivities(issueId));
-        Alert.alert('Success', 'Issue resolved successfully!');
+        dispatch(showToast({ message: 'Issue resolved successfully!', type: 'success' }));
       } else {
-        Alert.alert('Error', (action.payload as string) || 'Failed to resolve issue');
+        dispatch(showToast({ message: (action.payload as string) || 'Failed to resolve issue', type: 'error' }));
       }
     });
   };
@@ -334,9 +335,9 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
     dispatch(updateStatus({ id: issueId, status: 'REOPENED' })).then((action) => {
       if (updateStatus.fulfilled.match(action)) {
         dispatch(fetchActivities(issueId));
-        Alert.alert('Success', 'Issue has been reopened.');
+        dispatch(showToast({ message: 'Issue has been reopened.', type: 'success' }));
       } else {
-        Alert.alert('Error', (action.payload as string) || 'Failed to reopen issue');
+        dispatch(showToast({ message: (action.payload as string) || 'Failed to reopen issue', type: 'error' }));
       }
     });
   };
@@ -967,6 +968,7 @@ const styles = StyleSheet.create({
   },
   fullWidthAction: {
     width: '100%',
+    marginTop: Spacing.md,
   },
   sectionTitle: {
     color: Colors.textPrimary,

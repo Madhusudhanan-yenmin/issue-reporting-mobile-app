@@ -18,10 +18,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/types';
 import api from '../../services/api';
+import { useAppDispatch } from '../../store';
+import { showToast } from '../../store/slices/uiSlice';
 
 type Props = StackScreenProps<AuthStackParamList, 'ForgotPassword'>;
 
 export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
+  const dispatch = useAppDispatch();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,18 +52,8 @@ export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
       
       const response = await api.post('/auth/forgot-password', { email: email.trim() });
       
-      Alert.alert(
-        'Code Sent (Mock)',
-        'Reset code sent! Please use code "1234" to reset your password.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              navigation.navigate('ResetPassword', { email: email.trim(), isForgotPasswordFlow: true });
-            },
-          },
-        ]
-      );
+      dispatch(showToast({ message: 'Reset code sent! Use mock code "1234".', type: 'info' }));
+      navigation.navigate('ResetPassword', { email: email.trim(), isForgotPasswordFlow: true });
     } catch (err: any) {
       const message = err.response?.data?.message || 'Failed to send reset link. Please try again.';
       setError(Array.isArray(message) ? message[0] : message);

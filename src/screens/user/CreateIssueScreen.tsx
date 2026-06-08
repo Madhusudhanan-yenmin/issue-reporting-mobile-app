@@ -18,6 +18,7 @@ import * as Location from 'expo-location';
 import MapView from 'react-native-maps';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { createIssue } from '../../store/slices/issueSlice';
+import { showToast } from '../../store/slices/uiSlice';
 import { CustomButton } from '../../components/CustomButton';
 import { CustomInput } from '../../components/CustomInput';
 import { Colors, Typography, Spacing, Radii, Shadows } from '../../theme';
@@ -653,25 +654,19 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
 
     const resultAction = await dispatch(createIssue(payload));
     if (createIssue.fulfilled.match(resultAction)) {
-      Alert.alert('Success', 'Your issue has been filed successfully!', [
-        {
-          text: 'OK',
-          onPress: () => {
-            setTitle('');
-            setDescription('');
-            setLocation('');
-            setImages([]);
-            setRecordingUri(null);
-            setVoiceUrl('');
-            setVideoUri(null);
-            setVideoUrl('');
-            setCustomCategory('');
-            navigation.navigate('UserDashboard');
-          },
-        },
-      ]);
+      dispatch(showToast({ message: 'Your issue has been filed successfully!', type: 'success' }));
+      setTitle('');
+      setDescription('');
+      setLocation('');
+      setImages([]);
+      setRecordingUri(null);
+      setVoiceUrl('');
+      setVideoUri(null);
+      setVideoUrl('');
+      setCustomCategory('');
+      navigation.navigate('UserDashboard');
     } else {
-      Alert.alert('Error', (resultAction.payload as string) || 'Failed to file issue');
+      dispatch(showToast({ message: (resultAction.payload as string) || 'Failed to file issue', type: 'error' }));
     }
   };
 
