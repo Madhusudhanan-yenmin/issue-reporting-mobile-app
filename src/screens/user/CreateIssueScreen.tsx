@@ -273,7 +273,7 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
     if (errors.location) setErrors((prev) => ({ ...prev, location: undefined }));
   };
 
-  const pickImage = async () => {
+  const pickImage = async (skipCrop = false) => {
     // Ask permission
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -283,7 +283,7 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
+      allowsEditing: !skipCrop,
       quality: 0.8,
     });
 
@@ -293,7 +293,7 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const takePhoto = async () => {
+  const takePhoto = async (skipCrop = false) => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'Permission to access camera is required!');
@@ -301,7 +301,7 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
+      allowsEditing: !skipCrop,
       quality: 0.8,
     });
 
@@ -309,6 +309,28 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
       const asset = result.assets[0];
       uploadSelectedImage(asset.uri, asset.fileName || undefined, asset.mimeType || undefined);
     }
+  };
+
+  const promptCropOption = (onSelect: (skipCrop: boolean) => void) => {
+    Alert.alert(
+      'Crop Option',
+      'Do you want to crop the photo or skip cropping?',
+      [
+        {
+          text: 'Crop Photo ✂️',
+          onPress: () => onSelect(false),
+        },
+        {
+          text: 'Skip Crop ⏩',
+          onPress: () => onSelect(true),
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const handleImageAttachment = () => {
@@ -318,11 +340,11 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
       [
         {
           text: 'Take Photo 📸',
-          onPress: takePhoto,
+          onPress: () => promptCropOption((skipCrop) => takePhoto(skipCrop)),
         },
         {
           text: 'Choose from Gallery 🖼️',
-          onPress: pickImage,
+          onPress: () => promptCropOption((skipCrop) => pickImage(skipCrop)),
         },
         {
           text: 'Cancel',

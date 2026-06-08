@@ -56,7 +56,7 @@ export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
           {
             text: 'OK',
             onPress: () => {
-              navigation.navigate('ResetPassword', { email: email.trim() });
+              navigation.navigate('ResetPassword', { email: email.trim(), isForgotPasswordFlow: true });
             },
           },
         ]

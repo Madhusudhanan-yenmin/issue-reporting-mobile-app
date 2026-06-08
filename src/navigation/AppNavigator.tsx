@@ -271,6 +271,11 @@ export const AppNavigator = () => {
               component={FeedbackScreen}
               options={{ title: 'Resolution Feedback' }}
             />
+            <RootStack.Screen
+              name="ResetPassword"
+              component={ResetPasswordScreen}
+              options={{ title: 'Reset Password' }}
+            />
           </>
         )}
       </RootStack.Navigator>

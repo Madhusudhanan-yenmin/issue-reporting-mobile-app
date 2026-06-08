@@ -112,16 +112,6 @@ export const LoginScreen: React.FC<Props> = ({ navigation }) => {
               >
                 <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                onPress={() => {
-                  dispatch(clearAuthError());
-                  navigation.navigate('ResetPassword');
-                }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.forgotPasswordText}>Reset Password?</Text>
-              </TouchableOpacity>
             </View>
 
             <CustomButton
@@ -209,7 +199,7 @@ const styles = StyleSheet.create({
   },
   linksRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     marginBottom: Spacing.md,
     marginTop: -Spacing.xs,
   },
