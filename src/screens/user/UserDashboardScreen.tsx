@@ -16,6 +16,7 @@ import { IssueCard } from '../../components/IssueCard';
 import { LoadingIndicator } from '../../components/LoadingIndicator';
 import { EmptyState } from '../../components/EmptyState';
 import { Colors, Typography, Spacing } from '../../theme';
+import { FilterModal } from '../../components/FilterModal';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -40,6 +41,7 @@ export const UserDashboardScreen: React.FC<Props> = ({ navigation }) => {
   const [selectedStatus, setSelectedStatus] = useState('ALL');
   const [refreshing, setRefreshing] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(true);
+  const [filterModalVisible, setFilterModalVisible] = useState(false);
 
   // Debounce search input to avoid triggering APIs on every keystroke
   useEffect(() => {
@@ -79,6 +81,16 @@ export const UserDashboardScreen: React.FC<Props> = ({ navigation }) => {
     loadData(true);
   };
 
+  const categoryCounts = CATEGORIES.reduce((acc, cat) => {
+    acc[cat] = issues.filter((i: any) => cat === 'ALL' || i.category === cat).length;
+    return acc;
+  }, {} as Record<string, number>);
+
+  const statusCounts = STATUSES.reduce((acc, status) => {
+    acc[status] = issues.filter((i: any) => status === 'ALL' || i.status === status).length;
+    return acc;
+  }, {} as Record<string, number>);
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -94,8 +106,8 @@ export const UserDashboardScreen: React.FC<Props> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Search Input */}
-      <View style={styles.searchContainer}>
+      {/* Search Input & Filter Button */}
+      <View style={styles.searchRow}>
         <TextInput
           style={styles.searchInput}
           placeholder="Search by Ticket ID, Title, Description..."
@@ -103,64 +115,46 @@ export const UserDashboardScreen: React.FC<Props> = ({ navigation }) => {
           value={searchInput}
           onChangeText={setSearchInput}
         />
+        <TouchableOpacity
+          style={[
+            styles.filterButton,
+            (selectedCategory !== 'ALL' || selectedStatus !== 'ALL') && styles.filterButtonActive
+          ]}
+          onPress={() => setFilterModalVisible(true)}
+          activeOpacity={0.7}
+        >
+          <Text
+            style={[
+              styles.filterButtonText,
+              (selectedCategory !== 'ALL' || selectedStatus !== 'ALL') && styles.filterButtonTextActive
+            ]}
+          >
+            {(selectedCategory !== 'ALL' || selectedStatus !== 'ALL') ? '✓ Filter' : '🔍 Filter'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      {/* Filters */}
-      <View style={styles.filtersWrapper}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}
-          style={styles.categoryScrollOuter}
-        >
-          {CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat}
-              style={[
-                styles.filterTag,
-                selectedCategory === cat && styles.filterTagActive,
-              ]}
-              onPress={() => setSelectedCategory(cat)}
-            >
-              <Text
-                style={[
-                  styles.filterTagText,
-                  selectedCategory === cat && styles.filterTagTextActive,
-                ]}
-              >
-                {cat}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterScroll}
-          style={styles.statusScrollOuter}
-        >
-          {STATUSES.map((status) => (
-            <TouchableOpacity
-              key={status}
-              style={[
-                styles.filterTag,
-                selectedStatus === status && styles.filterTagActive,
-              ]}
-              onPress={() => setSelectedStatus(status)}
-            >
-              <Text
-                style={[
-                  styles.filterTagText,
-                  selectedStatus === status && styles.filterTagTextActive,
-                ]}
-              >
-                {status.replace('_', ' ')}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-      </View>
+      <FilterModal
+        visible={filterModalVisible}
+        onClose={() => setFilterModalVisible(false)}
+        selectedCategory={selectedCategory}
+        selectedStatus={selectedStatus}
+        onApply={(category, status) => {
+          setSelectedCategory(category);
+          setSelectedStatus(status);
+          setFilterModalVisible(false);
+        }}
+        onClear={() => {
+          setSelectedCategory('ALL');
+          setSelectedStatus('ALL');
+          setFilterModalVisible(false);
+        }}
+        totalCount={total || issues.length}
+        categories={CATEGORIES}
+        statuses={STATUSES}
+        categoryCounts={categoryCounts}
+        statusCounts={statusCounts}
+      />
 
       {/* Issues List */}
       {loading && isFirstLoad && !refreshing ? (
@@ -235,11 +229,14 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weight.bold,
     fontSize: Typography.size.sm + 1,
   },
-  searchContainer: {
+  searchRow: {
+    flexDirection: 'row',
     paddingHorizontal: Spacing.xl,
     marginBottom: Spacing.md,
+    gap: Spacing.sm,
   },
   searchInput: {
+    flex: 1,
     backgroundColor: Colors.inputBg,
     borderWidth: 1,
     borderColor: Colors.inputBorder,
@@ -249,40 +246,27 @@ const styles = StyleSheet.create({
     height: 44,
     fontSize: Typography.size.base,
   },
-  filtersWrapper: {
-    marginBottom: Spacing.sm,
-  },
-  categoryScrollOuter: {
-    marginBottom: Spacing.xs,
-  },
-  statusScrollOuter: {
-    marginBottom: Spacing.sm,
-  },
-  filterScroll: {
-    paddingHorizontal: Spacing.xl,
-    alignItems: 'center',
-    gap: Spacing.xs,
-  },
-  filterTag: {
+  filterButton: {
     backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 6,
     borderWidth: 1,
     borderColor: Colors.surfaceBorder,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    height: 44,
   },
-  filterTagActive: {
-    backgroundColor: Colors.primary,
+  filterButtonActive: {
     borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '15',
   },
-  filterTagText: {
-    color: Colors.textSecondary,
-    fontSize: Typography.size.xs + 1,
+  filterButtonText: {
+    color: Colors.textPrimary,
     fontWeight: Typography.weight.bold,
+    fontSize: Typography.size.sm,
   },
-  filterTagTextActive: {
-    color: '#FFFFFF',
+  filterButtonTextActive: {
+    color: Colors.primaryLight,
   },
   listContent: {
     paddingHorizontal: Spacing.xl,

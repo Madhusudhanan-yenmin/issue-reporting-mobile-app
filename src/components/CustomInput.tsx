@@ -9,6 +9,7 @@ import {
   StyleProp,
   ViewStyle,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radii } from '../theme';
 
 interface CustomInputProps extends TextInputProps {
@@ -59,9 +60,11 @@ export const CustomInput = React.forwardRef<TextInput, CustomInputProps>(({
             style={styles.toggleButton}
             activeOpacity={0.7}
           >
-            <Text style={styles.toggleText}>
-              {showPassword ? 'Hide' : 'Show'}
-            </Text>
+            <Ionicons
+              name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={Colors.textSecondary}
+            />
           </TouchableOpacity>
         )}
       </View>
