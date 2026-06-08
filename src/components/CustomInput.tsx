@@ -18,14 +18,14 @@ interface CustomInputProps extends TextInputProps {
   containerStyle?: StyleProp<ViewStyle>;
 }
 
-export const CustomInput: React.FC<CustomInputProps> = ({
+export const CustomInput = React.forwardRef<TextInput, CustomInputProps>(({
   label,
   error,
   isPassword = false,
   containerStyle,
   style,
   ...props
-}) => {
+}, ref) => {
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -41,6 +41,7 @@ export const CustomInput: React.FC<CustomInputProps> = ({
         ]}
       >
         <TextInput
+          ref={ref}
           style={[
             styles.input,
             props.multiline ? styles.inputMultiline : styles.inputSingleLine,
@@ -67,7 +68,9 @@ export const CustomInput: React.FC<CustomInputProps> = ({
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
-};
+});
+
+CustomInput.displayName = 'CustomInput';
 
 const styles = StyleSheet.create({
   container: {

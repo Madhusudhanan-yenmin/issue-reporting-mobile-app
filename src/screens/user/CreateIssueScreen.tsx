@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Modal,
+  TextInput,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as Location from 'expo-location';
@@ -25,6 +26,7 @@ import { CompositeScreenProps } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
 import { UserTabParamList, RootStackParamList } from '../../navigation/types';
 import api from '../../services/api';
+import { Ionicons } from '@expo/vector-icons';
 
 type Props = CompositeScreenProps<
   BottomTabScreenProps<UserTabParamList, 'CreateIssue'>,
@@ -83,6 +85,33 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
   const [videoUri, setVideoUri] = useState<string | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [uploadingVideo, setUploadingVideo] = useState(false);
+
+  const titleInputRef = useRef<TextInput | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      // Clear form inputs when screen gains focus
+      setTitle('');
+      setDescription('');
+      setCategory('ROAD');
+      setPriority('LOW');
+      setLocation('');
+      setImages([]);
+      setCustomCategory('');
+      setErrors({});
+      setRecordingUri(null);
+      setVoiceUrl('');
+      setVideoUri(null);
+      setVideoUrl('');
+
+      // Auto focus the title field after transition finishes
+      setTimeout(() => {
+        titleInputRef.current?.focus();
+      }, 100);
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   useEffect(() => {
     return () => {
@@ -586,11 +615,21 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <TouchableOpacity
+          style={styles.topBackButton}
+          onPress={() => navigation.goBack()}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="chevron-back" size={20} color={Colors.primary} />
+          <Text style={styles.topBackText}>Back</Text>
+        </TouchableOpacity>
+
         <View style={styles.formCard}>
           <Text style={styles.screenTitle}>File an Issue</Text>
           <Text style={styles.screenSubtitle}>Provide details about the civic grievance</Text>
 
           <CustomInput
+            ref={titleInputRef}
             label="Issue Title"
             placeholder="E.g., Pothole on Main Street"
             value={title}
@@ -1244,5 +1283,23 @@ const styles = StyleSheet.create({
     color: Colors.error,
     fontSize: Typography.size.xs + 1,
     fontWeight: 'bold',
+  },
+  topBackButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginBottom: Spacing.lg,
+    paddingVertical: Spacing.sm - 2,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+  },
+  topBackText: {
+    color: Colors.textSecondary,
+    fontSize: Typography.size.sm,
+    fontWeight: Typography.weight.medium,
+    marginLeft: Spacing.xs,
   },
 });

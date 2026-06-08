@@ -82,7 +82,7 @@ export const OfficerDashboardScreen: React.FC<Props> = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerLeft}>
           <Text style={styles.welcomeText}>Welcome Officer,</Text>
           <Text style={styles.userName}>{user?.name || 'Officer'}</Text>
         </View>
@@ -205,6 +205,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.xl,
     paddingTop: Spacing.md,
     marginBottom: Spacing.md,
+  },
+  headerLeft: {
+    flex: 1,
+    marginRight: Spacing.md,
   },
   welcomeText: {
     color: Colors.textSecondary,
