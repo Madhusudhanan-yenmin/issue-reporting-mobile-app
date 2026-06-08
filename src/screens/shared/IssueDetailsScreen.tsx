@@ -185,7 +185,7 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
     });
   };
 
-  const pickResolutionImage = async () => {
+  const pickResolutionImage = async (skipCrop = false) => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'Permission to access media library is required!');
@@ -194,7 +194,7 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
+      allowsEditing: !skipCrop,
       quality: 0.8,
     });
 
@@ -204,7 +204,7 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
     }
   };
 
-  const takeResolutionPhoto = async () => {
+  const takeResolutionPhoto = async (skipCrop = false) => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'Permission to access camera is required!');
@@ -212,7 +212,7 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
+      allowsEditing: !skipCrop,
       quality: 0.8,
     });
 
@@ -220,6 +220,28 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
       const asset = result.assets[0];
       uploadResImage(asset.uri, asset.fileName || undefined, asset.mimeType || undefined);
     }
+  };
+
+  const promptResolutionCropOption = (onSelect: (skipCrop: boolean) => void) => {
+    Alert.alert(
+      'Crop Option',
+      'Do you want to crop the resolution photo or skip cropping?',
+      [
+        {
+          text: 'Crop Photo ✂️',
+          onPress: () => onSelect(false),
+        },
+        {
+          text: 'Skip Crop ⏩',
+          onPress: () => onSelect(true),
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true }
+    );
   };
 
   const handleResolutionImageAttachment = () => {
@@ -229,11 +251,11 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
       [
         {
           text: 'Take Photo 📸',
-          onPress: takeResolutionPhoto,
+          onPress: () => promptResolutionCropOption((skipCrop) => takeResolutionPhoto(skipCrop)),
         },
         {
           text: 'Choose from Gallery 🖼️',
-          onPress: pickResolutionImage,
+          onPress: () => promptResolutionCropOption((skipCrop) => pickResolutionImage(skipCrop)),
         },
         {
           text: 'Cancel',

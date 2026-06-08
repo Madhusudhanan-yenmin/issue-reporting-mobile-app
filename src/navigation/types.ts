@@ -2,7 +2,7 @@ export type AuthStackParamList = {
   Login: undefined;
   Register: undefined;
   ForgotPassword: undefined;
-  ResetPassword: { email?: string } | undefined;
+  ResetPassword: { email?: string; isForgotPasswordFlow?: boolean } | undefined;
 };
 
 export type UserTabParamList = {
@@ -29,4 +29,5 @@ export type RootStackParamList = {
   OfficerHome: undefined;
   IssueDetails: { issueId: string };
   Feedback: { issueId: string };
+  ResetPassword: { email?: string; isForgotPasswordFlow?: boolean } | undefined;
 };

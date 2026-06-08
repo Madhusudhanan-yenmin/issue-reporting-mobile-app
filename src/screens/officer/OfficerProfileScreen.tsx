@@ -1,5 +1,8 @@
 import React from 'react';
 import { StyleSheet, View, Text, SafeAreaView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../navigation/types';
 import { useAppDispatch, useAppSelector } from '../../store';
 import { logout } from '../../store/slices/authSlice';
 import { CustomButton } from '../../components/CustomButton';
@@ -8,9 +11,14 @@ import { Colors, Typography, Spacing, Radii } from '../../theme';
 export const OfficerProfileScreen: React.FC = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
+  const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
 
   const handleLogout = () => {
     dispatch(logout());
+  };
+
+  const handleResetPassword = () => {
+    navigation.navigate('ResetPassword', { email: user?.email, isForgotPasswordFlow: false });
   };
 
   return (
@@ -38,12 +46,20 @@ export const OfficerProfileScreen: React.FC = () => {
           </View>
         </View>
 
-        <CustomButton
-          title="Sign Out"
-          onPress={handleLogout}
-          variant="danger"
-          style={styles.logoutButton}
-        />
+        <View style={styles.buttonContainer}>
+          <CustomButton
+            title="Reset Password"
+            onPress={handleResetPassword}
+            variant="outline"
+            style={styles.resetButton}
+          />
+          <CustomButton
+            title="Sign Out"
+            onPress={handleLogout}
+            variant="danger"
+            style={styles.logoutButton}
+          />
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -115,7 +131,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceBorder,
     marginVertical: Spacing.sm,
   },
-  logoutButton: {
+  buttonContainer: {
     marginBottom: Spacing.xl,
   },
+  resetButton: {
+    marginBottom: Spacing.md,
+  },
+  logoutButton: {},
 });

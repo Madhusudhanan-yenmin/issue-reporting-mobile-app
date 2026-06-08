@@ -18,12 +18,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/types';
 import api from '../../services/api';
+import { useAppSelector } from '../../store';
 
-type Props = StackScreenProps<AuthStackParamList, 'ResetPassword'>;
+type Props = StackScreenProps<any, 'ResetPassword'>;
 
 export const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { isAuthenticated } = useAppSelector((state) => state.auth);
   const emailParam = route.params?.email || '';
-  const isDirectReset = !emailParam; // True if opened directly from Signin (no pre-filled email)
+  const isForgotPasswordFlow = route.params?.isForgotPasswordFlow ?? false;
+  const isDirectReset = !isForgotPasswordFlow; // True if change password, false if forgot password (OTP)
 
   const [emailInput, setEmailInput] = useState(emailParam);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -55,8 +58,6 @@ export const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
     if (isDirectReset) {
       if (!currentPassword) {
         tempErrors.currentPassword = 'Current Password is required';
-      } else if (currentPassword.length < 6) {
-        tempErrors.currentPassword = 'Password must be at least 6 characters';
       }
     }
     
@@ -112,13 +113,17 @@ export const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
       Alert.alert(
         'Success',
         isDirectReset
-          ? 'Your password has been changed successfully! You can now log in with your new password.'
-          : 'Your password has been reset successfully! You can now log in with your new password.',
+          ? 'Your password has been changed successfully!'
+          : 'Your password has been reset successfully!',
         [
           {
             text: 'OK',
             onPress: () => {
-              navigation.navigate('Login');
+              if (isAuthenticated) {
+                navigation.goBack();
+              } else {
+                (navigation.navigate as any)('Login');
+              }
             },
           },
         ]
@@ -172,9 +177,9 @@ export const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
               error={errors.emailInput}
               keyboardType="email-address"
               autoCapitalize="none"
-              editable={isDirectReset}
-              selectTextOnFocus={isDirectReset}
-              containerStyle={!isDirectReset ? styles.disabledInput : null}
+              editable={isDirectReset && !isAuthenticated}
+              selectTextOnFocus={isDirectReset && !isAuthenticated}
+              containerStyle={(!isDirectReset || isAuthenticated) ? styles.disabledInput : null}
             />
 
             {/* Current Password - Hidden completely if NOT accessed directly from Signin */}
@@ -243,7 +248,13 @@ export const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
 
             <CustomButton
               title="Cancel"
-              onPress={() => navigation.navigate('Login')}
+              onPress={() => {
+                if (isAuthenticated) {
+                  navigation.goBack();
+                } else {
+                  (navigation.navigate as any)('Login');
+                }
+              }}
               variant="secondary"
               style={styles.cancelButton}
             />
