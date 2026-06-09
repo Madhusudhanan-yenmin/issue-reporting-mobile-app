@@ -36,6 +36,46 @@ type Props = CompositeScreenProps<
 
 const CATEGORIES = ['ROAD', 'WATER', 'ELECTRICITY', 'GARBAGE', 'DRAINAGE', 'OTHER'];
 const PRIORITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const DISTRICTS = [
+  'Ariyalur',
+  'Chengalpattu',
+  'Chennai',
+  'Coimbatore',
+  'Cuddalore',
+  'Dharmapuri',
+  'Dindigul',
+  'Erode',
+  'Kallakurichi',
+  'Kanchipuram',
+  'Kanyakumari',
+  'Karur',
+  'Krishnagiri',
+  'Madurai',
+  'Mayiladuthurai',
+  'Nagapattinam',
+  'Namakkal',
+  'Nilgiris',
+  'Perambalur',
+  'Pudukkottai',
+  'Ramanathapuram',
+  'Ranipet',
+  'Salem',
+  'Sivaganga',
+  'Tenkasi',
+  'Thanjavur',
+  'Theni',
+  'Thoothukudi',
+  'Tiruchirappalli',
+  'Tirunelveli',
+  'Tirupathur',
+  'Tiruppur',
+  'Tiruvallur',
+  'Tiruvannamalai',
+  'Tiruvarur',
+  'Vellore',
+  'Villupuram',
+  'Virudhunagar',
+];
 
 export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
   const dispatch = useAppDispatch();
@@ -45,7 +85,15 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('ROAD');
   const [priority, setPriority] = useState('LOW');
-  const [location, setLocation] = useState('');
+  
+  const [district, setDistrict] = useState('');
+  const [town, setTown] = useState('');
+  const [stateName, setStateName] = useState('Tamil Nadu');
+  const [address, setAddress] = useState('');
+  const [latitude, setLatitude] = useState<number | undefined>(undefined);
+  const [longitude, setLongitude] = useState<number | undefined>(undefined);
+  const [districtModalVisible, setDistrictModalVisible] = useState(false);
+
   const [images, setImages] = useState<string[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [fetchingLocation, setFetchingLocation] = useState(false);
@@ -53,25 +101,11 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
   const [errors, setErrors] = useState<{
     title?: string;
     description?: string;
-    location?: string;
+    district?: string;
+    town?: string;
+    address?: string;
     customCategory?: string;
   }>({});
-
-  // Map Selector State
-  const [mapModalVisible, setMapModalVisible] = useState(false);
-  const [mapRegion, setMapRegion] = useState({
-    latitude: 12.971592, // Default Chennai/Sholinganallur coordinates
-    longitude: 80.243491,
-    latitudeDelta: 0.005,
-    longitudeDelta: 0.005,
-  });
-  const [markerCoordinate, setMarkerCoordinate] = useState({
-    latitude: 12.971592,
-    longitude: 80.243491,
-  });
-  const [mapAddressPreview, setMapAddressPreview] = useState('');
-  const [resolvingMapAddress, setResolvingMapAddress] = useState(false);
-  const mapRef = useRef<MapView | null>(null);
 
   // Voice Recording State
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -96,7 +130,12 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
       setDescription('');
       setCategory('ROAD');
       setPriority('LOW');
-      setLocation('');
+      setDistrict('');
+      setTown('');
+      setStateName('Tamil Nadu');
+      setAddress('');
+      setLatitude(undefined);
+      setLongitude(undefined);
       setImages([]);
       setCustomCategory('');
       setErrors({});
@@ -130,8 +169,14 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
     if (!description.trim()) {
       tempErrors.description = 'Description is required';
     }
-    if (!location.trim()) {
-      tempErrors.location = 'Location detail is required';
+    if (!district) {
+      tempErrors.district = 'District is required';
+    }
+    if (!town.trim()) {
+      tempErrors.town = 'Town/City is required';
+    }
+    if (!address.trim()) {
+      tempErrors.address = 'Address is required';
     }
     if (category === 'OTHER' && !customCategory.trim()) {
       tempErrors.customCategory = 'Please specify the category';
@@ -140,50 +185,7 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
     return Object.keys(tempErrors).length === 0;
   };
 
-  const resolveAddressForCoords = async (coords: { latitude: number; longitude: number }) => {
-    try {
-      setResolvingMapAddress(true);
-      const addressResult = await Location.reverseGeocodeAsync({
-        latitude: coords.latitude,
-        longitude: coords.longitude,
-      });
-
-      if (addressResult && addressResult.length > 0) {
-        const addr = addressResult[0];
-        const namePart = addr.name && addr.name !== addr.streetNumber ? addr.name : '';
-        const addressParts = [
-          namePart,
-          addr.streetNumber,
-          addr.street,
-          addr.district,
-          addr.subregion,
-          addr.city,
-          addr.region,
-          addr.postalCode,
-        ].filter((val): val is string => !!val);
-
-        // Deduplicate address parts case-insensitively
-        const uniqueParts: string[] = [];
-        addressParts.forEach((part) => {
-          const trimmed = part.trim();
-          if (trimmed && !uniqueParts.some((p) => p.toLowerCase() === trimmed.toLowerCase())) {
-            uniqueParts.push(trimmed);
-          }
-        });
-
-        const formattedAddress = uniqueParts.join(', ');
-        setMapAddressPreview(formattedAddress || 'Unknown location');
-      } else {
-        setMapAddressPreview('Unknown location');
-      }
-    } catch {
-      setMapAddressPreview('Failed to resolve address');
-    } finally {
-      setResolvingMapAddress(false);
-    }
-  };
-
-  const getCurrentLocation = async () => {
+  const handleUseCurrentLocation = async () => {
     try {
       setFetchingLocation(true);
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -197,81 +199,66 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
       });
 
       const { latitude, longitude } = locationData.coords;
-      const coords = { latitude, longitude };
+      setLatitude(latitude);
+      setLongitude(longitude);
 
-      setMarkerCoordinate(coords);
-      const newRegion = {
+      const addressResult = await Location.reverseGeocodeAsync({
         latitude,
         longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      };
-      setMapRegion(newRegion);
+      });
 
-      await resolveAddressForCoords(coords);
-      setMapModalVisible(true);
+      if (addressResult && addressResult.length > 0) {
+        const addr = addressResult[0];
 
-      // Smoothly focus/animate once the modal renders the MapView
-      setTimeout(() => {
-        mapRef.current?.animateToRegion(newRegion, 1000);
-      }, 300);
+        // 1. Resolve District
+        const resolvedDistrict = addr.district || addr.subregion || addr.city || '';
+        const matchedDistrict = DISTRICTS.find(
+          (d) => d.toLowerCase() === resolvedDistrict.toLowerCase()
+        );
+        if (matchedDistrict) {
+          setDistrict(matchedDistrict);
+          if (errors.district) setErrors((prev) => ({ ...prev, district: undefined }));
+        } else {
+          const cityMatch = DISTRICTS.find(
+            (d) => d.toLowerCase() === (addr.city || '').toLowerCase()
+          );
+          if (cityMatch) {
+            setDistrict(cityMatch);
+            if (errors.district) setErrors((prev) => ({ ...prev, district: undefined }));
+          } else {
+            setDistrict('');
+          }
+        }
+
+        // 2. Resolve Town / City
+        const resolvedTown = addr.city || addr.subregion || addr.district || '';
+        setTown(resolvedTown);
+        if (errors.town) setErrors((prev) => ({ ...prev, town: undefined }));
+
+        // 3. Resolve State
+        const resolvedState = addr.region || '';
+        setStateName(resolvedState);
+
+        // 4. Resolve Address
+        const namePart = addr.name && addr.name !== addr.streetNumber ? addr.name : '';
+        const addressParts = [
+          namePart,
+          addr.streetNumber,
+          addr.street,
+        ].filter(Boolean);
+        const resolvedAddress = addressParts.join(', ') || 'GPS Location';
+        setAddress(resolvedAddress);
+        if (errors.address) setErrors((prev) => ({ ...prev, address: undefined }));
+
+        dispatch(showToast({ message: 'Location auto-filled successfully!', type: 'success' }));
+      } else {
+        Alert.alert('Location Error', 'Unable to resolve address for coordinates.');
+      }
     } catch (err: any) {
-      Alert.alert('Location Error', 'Failed to retrieve your current location. Opening map fallback...');
-      setMapModalVisible(true);
+      Alert.alert('Location Error', 'Failed to retrieve your current location. Please verify GPS is enabled.');
     } finally {
       setFetchingLocation(false);
     }
-  };
-
-  const recenterToCurrentLocation = async () => {
-    try {
-      setResolvingMapAddress(true);
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission Denied', 'Permission to access location is required!');
-        return;
-      }
-
-      const locationData = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-
-      const { latitude, longitude } = locationData.coords;
-      const coords = { latitude, longitude };
-
-      setMarkerCoordinate(coords);
-      const newRegion = {
-        latitude,
-        longitude,
-        latitudeDelta: 0.005,
-        longitudeDelta: 0.005,
-      };
-
-      mapRef.current?.animateToRegion(newRegion, 800);
-      await resolveAddressForCoords(coords);
-    } catch (err: any) {
-      Alert.alert('Location Error', 'Failed to get current GPS location. Please check if location services are enabled.');
-    } finally {
-      setResolvingMapAddress(false);
-    }
-  };
-
-  const handleConfirmLocation = () => {
-    const lat = markerCoordinate.latitude.toFixed(6);
-    const lng = markerCoordinate.longitude.toFixed(6);
-    
-    let locationStr = `${lat}, ${lng}`;
-    if (
-      mapAddressPreview && 
-      mapAddressPreview !== 'Unknown location' && 
-      mapAddressPreview !== 'Failed to resolve address'
-    ) {
-      locationStr += ` (${mapAddressPreview})`;
-    }
-    
-    setLocation(locationStr);
-    setMapModalVisible(false);
-    if (errors.location) setErrors((prev) => ({ ...prev, location: undefined }));
   };
 
   const pickImage = async (skipCrop = false) => {
@@ -646,7 +633,12 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
       description: category === 'OTHER' ? `[Custom Category: ${customCategory.trim()}] ${description}` : description,
       category,
       priority,
-      location,
+      district,
+      town,
+      address,
+      latitude: latitude || undefined,
+      longitude: longitude || undefined,
+      location: `${address}, ${town}, ${district}`,
       images,
       voiceUrl: voiceUrl || undefined,
       videoUrl: videoUrl || undefined,
@@ -654,10 +646,15 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
 
     const resultAction = await dispatch(createIssue(payload));
     if (createIssue.fulfilled.match(resultAction)) {
-      dispatch(showToast({ message: 'Your issue has been filed successfully!', type: 'success' }));
+      dispatch(showToast({ message: 'Your grievance has been filed successfully!', type: 'success' }));
       setTitle('');
       setDescription('');
-      setLocation('');
+      setDistrict('');
+      setTown('');
+      setStateName('Tamil Nadu');
+      setAddress('');
+      setLatitude(undefined);
+      setLongitude(undefined);
       setImages([]);
       setRecordingUri(null);
       setVoiceUrl('');
@@ -762,25 +759,90 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Location/Address Selection */}
+          {/* Location Information Section */}
           <View style={styles.locationContainer}>
-            <View style={styles.locationHeaderRow}>
-              <Text style={styles.locationLabel}>Location/Address</Text>
-              <TouchableOpacity onPress={getCurrentLocation} disabled={fetchingLocation}>
-                <Text style={styles.locationLink}>
-                  {fetchingLocation ? 'Fetching...' : '📍 Select on Map'}
+            <Text style={styles.sectionLabel}>Location Information</Text>
+
+            {/* Option 1: Use Current Location */}
+            <TouchableOpacity
+              style={[
+                styles.gpsButton,
+                fetchingLocation && styles.gpsButtonFetching,
+              ]}
+              onPress={handleUseCurrentLocation}
+              disabled={fetchingLocation}
+              activeOpacity={0.8}
+            >
+              {fetchingLocation ? (
+                <ActivityIndicator size="small" color="#FFFFFF" style={{ marginRight: Spacing.sm }} />
+              ) : (
+                <Ionicons name="location" size={18} color="#FFFFFF" style={{ marginRight: Spacing.xs }} />
+              )}
+              <Text style={styles.gpsButtonText}>
+                {fetchingLocation ? 'Fetching GPS Location...' : 'Use Current Location'}
+              </Text>
+            </TouchableOpacity>
+
+            <Text style={styles.manualEntryDivider}>— Or Enter Location Manually —</Text>
+
+            {/* Option 2: Manual / GPS Fields */}
+            {/* District Select */}
+            <View style={styles.selectContainer}>
+              <Text style={styles.selectLabel}>District *</Text>
+              <TouchableOpacity
+                style={[
+                  styles.selectBox,
+                  errors.district ? styles.selectBoxError : null,
+                ]}
+                onPress={() => setDistrictModalVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={district ? styles.selectValueText : styles.selectPlaceholderText}>
+                  {district || 'Select district'}
                 </Text>
+                <Ionicons name="chevron-down" size={18} color={Colors.textSecondary} />
               </TouchableOpacity>
+              {errors.district && <Text style={styles.errorText}>{errors.district}</Text>}
             </View>
+
+            {/* Town / City input */}
             <CustomInput
-              placeholder="E.g., Near Block B Metro Station, Street 4"
-              value={location}
+              label="Town / City *"
+              placeholder="E.g., Panruti"
+              value={town}
               onChangeText={(text) => {
-                setLocation(text);
-                if (errors.location) setErrors({ ...errors, location: undefined });
+                setTown(text);
+                if (errors.town) setErrors({ ...errors, town: undefined });
               }}
-              error={errors.location}
+              error={errors.town}
             />
+
+            {/* State input */}
+            <CustomInput
+              label="State (Optional)"
+              placeholder="E.g., Tamil Nadu"
+              value={stateName}
+              onChangeText={setStateName}
+            />
+
+            {/* Address input */}
+            <CustomInput
+              label="Address *"
+              placeholder="E.g., Near Bus Stand"
+              value={address}
+              onChangeText={(text) => {
+                setAddress(text);
+                if (errors.address) setErrors({ ...errors, address: undefined });
+              }}
+              error={errors.address}
+            />
+
+            {/* Coordinates Display if present */}
+            {latitude && longitude ? (
+              <Text style={styles.gpsCoordinatesInfo}>
+                📍 GPS Coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+              </Text>
+            ) : null}
           </View>
 
           {/* Image Upload Area */}
@@ -908,65 +970,43 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      {/* Map Selector Modal */}
-      <Modal visible={mapModalVisible} animationType="slide" transparent={false}>
-        <SafeAreaView style={styles.mapModalContainer}>
-          <View style={styles.mapHeader}>
-            <TouchableOpacity onPress={() => setMapModalVisible(false)} style={styles.mapCloseButton}>
-              <Text style={styles.mapCloseButtonText}>✕ Cancel</Text>
-            </TouchableOpacity>
-            <Text style={styles.mapHeaderTitle}>Select Location</Text>
-            <View style={{ width: 60 }} />
-          </View>
-
-          <View style={styles.mapWrapper}>
-            <MapView
-              ref={mapRef}
-              style={styles.map}
-              initialRegion={mapRegion}
-              showsUserLocation={true}
-              showsMyLocationButton={false}
-              onRegionChangeComplete={(region) => {
-                const coords = { latitude: region.latitude, longitude: region.longitude };
-                setMarkerCoordinate(coords);
-                resolveAddressForCoords(coords);
-              }}
-            />
-            {/* Static Central Pin (Crosshair Style) */}
-            <View style={styles.markerFixed} pointerEvents="none">
-              <Text style={{ fontSize: 40 }}>📍</Text>
-            </View>
-
-            {/* Recenter Button */}
-            <TouchableOpacity
-              style={styles.recenterButton}
-              onPress={recenterToCurrentLocation}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.recenterButtonText}>⌖</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Address Preview Panel */}
-          <View style={styles.addressPanel}>
-            <Text style={styles.addressPanelLabel}>PINNED LOCATION DETAILS</Text>
-            <Text style={styles.coordinatesText}>
-              Latitude: {markerCoordinate.latitude.toFixed(6)} | Longitude: {markerCoordinate.longitude.toFixed(6)}
-            </Text>
-            <View style={styles.addressPreviewContainer}>
-              {resolvingMapAddress ? (
-                <ActivityIndicator size="small" color={Colors.primary} />
-              ) : (
-                <Text style={styles.addressPreviewText}>{mapAddressPreview || 'Resolving address...'}</Text>
-              )}
-            </View>
+      {/* District Selection Modal */}
+      <Modal visible={districtModalVisible} transparent animationType="slide">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select District</Text>
+            <ScrollView style={styles.modalScroll}>
+              {DISTRICTS.map((d) => (
+                <TouchableOpacity
+                  key={d}
+                  style={[
+                    styles.modalItem,
+                    district === d && styles.modalItemActive,
+                  ]}
+                  onPress={() => {
+                    setDistrict(d);
+                    setDistrictModalVisible(false);
+                    if (errors.district) setErrors((prev) => ({ ...prev, district: undefined }));
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.modalItemText,
+                      district === d && styles.modalItemTextActive,
+                    ]}
+                  >
+                    {d}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
             <CustomButton
-              title="Confirm Location Pin"
-              onPress={handleConfirmLocation}
-              style={styles.confirmPinButton}
+              title="Cancel"
+              onPress={() => setDistrictModalVisible(false)}
+              variant="secondary"
             />
           </View>
-        </SafeAreaView>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -1094,119 +1134,119 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.base,
     width: '100%',
   },
-  locationHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  gpsButton: {
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    height: 48,
     alignItems: 'center',
-    marginBottom: Spacing.xs,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    marginBottom: Spacing.base,
+    ...Shadows.sm,
   },
-  locationLabel: {
+  gpsButtonFetching: {
+    backgroundColor: Colors.primaryDark,
+    opacity: 0.8,
+  },
+  gpsButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: Typography.size.base,
+  },
+  manualEntryDivider: {
+    color: Colors.textMuted,
+    fontSize: Typography.size.xs + 1,
+    fontWeight: Typography.weight.bold,
+    textAlign: 'center',
+    marginVertical: Spacing.sm,
+    textTransform: 'uppercase',
+  },
+  gpsCoordinatesInfo: {
+    color: Colors.accent,
+    fontSize: Typography.size.xs + 1,
+    fontWeight: 'bold',
+    marginTop: Spacing.xs,
+    textAlign: 'center',
+  },
+  // Custom Select Input Styles
+  selectContainer: {
+    marginBottom: Spacing.base,
+    width: '100%',
+  },
+  selectLabel: {
     color: Colors.textSecondary,
     fontSize: Typography.size.sm,
     fontWeight: Typography.weight.medium,
-  },
-  locationLink: {
-    color: Colors.primary,
-    fontSize: Typography.size.sm,
-    fontWeight: Typography.weight.bold,
-  },
-  mapModalContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  mapHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: Spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceBorder,
-    backgroundColor: Colors.surface,
-  },
-  mapHeaderTitle: {
-    fontSize: Typography.size.base + 2,
-    fontWeight: Typography.weight.bold,
-    color: Colors.textPrimary,
-  },
-  mapCloseButton: {
-    paddingVertical: Spacing.xs,
-  },
-  mapCloseButtonText: {
-    color: Colors.textSecondary,
-    fontSize: Typography.size.sm,
-    fontWeight: Typography.weight.bold,
-  },
-  mapWrapper: {
-    flex: 1,
-    position: 'relative',
-  },
-  map: {
-    width: '100%',
-    height: '100%',
-  },
-  markerFixed: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginTop: -40,
-    marginLeft: -20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  recenterButton: {
-    position: 'absolute',
-    bottom: Spacing.lg,
-    right: Spacing.lg,
-    backgroundColor: Colors.surfaceElevated,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
-    ...Shadows.md,
-  },
-  recenterButtonText: {
-    color: Colors.primary,
-    fontSize: 28,
-    fontWeight: 'bold',
-    lineHeight: 30,
-    textAlign: 'center',
-  },
-  addressPanel: {
-    backgroundColor: Colors.surface,
-    padding: Spacing.xl,
-    borderTopWidth: 1,
-    borderTopColor: Colors.surfaceBorder,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    ...Shadows.lg,
-  },
-  addressPanelLabel: {
-    color: Colors.textMuted,
-    fontSize: Typography.size.xs,
-    fontWeight: Typography.weight.bold,
     marginBottom: Spacing.xs,
   },
-  coordinatesText: {
-    color: Colors.textSecondary,
-    fontSize: Typography.size.xs + 1,
-    marginBottom: Spacing.md,
+  selectBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.inputBg,
+    borderWidth: 1,
+    borderColor: Colors.inputBorder,
+    borderRadius: 10,
+    paddingHorizontal: Spacing.md,
+    height: 48,
   },
-  addressPreviewContainer: {
-    minHeight: 48,
-    justifyContent: 'center',
-    marginBottom: Spacing.lg,
+  selectBoxError: {
+    borderColor: Colors.error,
   },
-  addressPreviewText: {
+  selectValueText: {
     color: Colors.textPrimary,
     fontSize: Typography.size.base,
-    lineHeight: Typography.lineHeight.normal * Typography.size.base,
-    fontWeight: Typography.weight.bold,
   },
-  confirmPinButton: {
-    width: '100%',
+  selectPlaceholderText: {
+    color: Colors.placeholder,
+    fontSize: Typography.size.base,
+  },
+  errorText: {
+    color: Colors.error,
+    fontSize: Typography.size.xs + 1,
+    marginTop: Spacing.xs,
+  },
+  // Modal Selector Styles
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    justifyContent: 'center',
+    padding: Spacing.xl,
+  },
+  modalContent: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+    maxHeight: '70%',
+  },
+  modalTitle: {
+    color: Colors.textPrimary,
+    fontSize: Typography.size.lg,
+    fontWeight: Typography.weight.bold,
+    marginBottom: Spacing.md,
+    textAlign: 'center',
+  },
+  modalScroll: {
+    marginBottom: Spacing.md,
+  },
+  modalItem: {
+    paddingVertical: Spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.surfaceBorder,
+    paddingHorizontal: Spacing.sm,
+  },
+  modalItemActive: {
+    backgroundColor: Colors.primary + '15',
+  },
+  modalItemText: {
+    color: Colors.textPrimary,
+    fontSize: Typography.size.base,
+  },
+  modalItemTextActive: {
+    color: Colors.primaryLight,
+    fontWeight: Typography.weight.bold,
   },
   voiceSection: {
     marginBottom: Spacing.xl,

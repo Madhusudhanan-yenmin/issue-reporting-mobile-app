@@ -729,16 +729,40 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
               {officers.length === 0 ? (
                 <Text style={styles.emptyText}>No officers available.</Text>
               ) : (
-                officers.map((officer) => (
-                  <TouchableOpacity
-                    key={officer._id}
-                    style={styles.modalItem}
-                    onPress={() => handleAssignOfficer(officer._id)}
-                  >
-                    <Text style={styles.modalItemText}>{officer.name}</Text>
-                    <Text style={styles.modalItemSubText}>{officer.email}</Text>
-                  </TouchableOpacity>
-                ))
+                [...officers]
+                  .sort((a, b) => {
+                    const issueDistrict = selectedIssue?.district || '';
+                    const aMatches = issueDistrict && a.district?.toLowerCase() === issueDistrict.toLowerCase();
+                    const bMatches = issueDistrict && b.district?.toLowerCase() === issueDistrict.toLowerCase();
+                    if (aMatches && !bMatches) return -1;
+                    if (!aMatches && bMatches) return 1;
+                    return 0;
+                  })
+                  .map((officer) => {
+                    const isRecommended = selectedIssue?.district && officer.district?.toLowerCase() === selectedIssue.district.toLowerCase();
+                    return (
+                      <TouchableOpacity
+                        key={officer._id}
+                        style={[
+                          styles.officerCardItem,
+                          isRecommended && styles.recommendedOfficerCardItem,
+                        ]}
+                        onPress={() => handleAssignOfficer(officer._id)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.officerItemHeader}>
+                          <Text style={styles.officerItemName}>{officer.name}</Text>
+                          {isRecommended && (
+                            <View style={styles.recommendedBadge}>
+                              <Text style={styles.recommendedBadgeText}>✨ Recommended</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.officerItemRole}>{officer.officerRole || 'Sanitation/Maintenance Officer'}</Text>
+                        <Text style={styles.officerItemDistrict}>District: {officer.district || 'Not Assigned'}</Text>
+                      </TouchableOpacity>
+                    );
+                  })
               )}
             </ScrollView>
             <CustomButton
@@ -1231,5 +1255,52 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     lineHeight: Typography.lineHeight.normal * Typography.size.base,
     marginTop: Spacing.xs,
+  },
+  // Recommended Officer Item Styles
+  officerCardItem: {
+    padding: Spacing.md,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+    backgroundColor: Colors.surfaceElevated,
+    marginBottom: Spacing.sm,
+  },
+  recommendedOfficerCardItem: {
+    borderColor: Colors.accent + '60',
+    backgroundColor: Colors.surfaceElevated,
+  },
+  officerItemHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs - 2,
+  },
+  officerItemName: {
+    color: Colors.textPrimary,
+    fontSize: Typography.size.base,
+    fontWeight: Typography.weight.bold,
+  },
+  recommendedBadge: {
+    backgroundColor: Colors.accent + '15',
+    borderColor: Colors.accent,
+    borderWidth: 1,
+    borderRadius: Radii.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+  },
+  recommendedBadgeText: {
+    color: Colors.accent,
+    fontSize: Typography.size.xs,
+    fontWeight: Typography.weight.bold,
+  },
+  officerItemRole: {
+    color: Colors.textSecondary,
+    fontSize: Typography.size.sm,
+    marginBottom: 2,
+  },
+  officerItemDistrict: {
+    color: Colors.textMuted,
+    fontSize: Typography.size.xs + 1,
+    fontWeight: Typography.weight.bold,
   },
 });
