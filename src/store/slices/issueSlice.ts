@@ -10,6 +10,11 @@ export interface Issue {
   priority: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   status: 'OPEN' | 'ASSIGNED' | 'IN_PROGRESS' | 'RESOLVED' | 'REOPENED' | 'CLOSED';
   location: string;
+  district?: string;
+  town?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
   images: string[];
   userId: any;
   officerId: any;
