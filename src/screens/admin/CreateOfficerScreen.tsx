@@ -84,9 +84,8 @@ export const CreateOfficerScreen: React.FC<Props> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [district, setDistrict] = useState('');
-  const [officerRole, setOfficerRole] = useState('');
+  const [officerRole, setOfficerRole] = useState('District Officer');
   const [districtModalVisible, setDistrictModalVisible] = useState(false);
-  const [roleModalVisible, setRoleModalVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{
     name?: string;
@@ -95,7 +94,6 @@ export const CreateOfficerScreen: React.FC<Props> = ({ navigation }) => {
     password?: string;
     confirmPassword?: string;
     district?: string;
-    officerRole?: string;
   }>({});
 
   const validate = () => {
@@ -126,9 +124,6 @@ export const CreateOfficerScreen: React.FC<Props> = ({ navigation }) => {
     if (!district) {
       tempErrors.district = 'District is required';
     }
-    if (!officerRole) {
-      tempErrors.officerRole = 'Officer Role is required';
-    }
 
     setErrors(tempErrors);
     return Object.keys(tempErrors).length === 0;
@@ -158,7 +153,6 @@ export const CreateOfficerScreen: React.FC<Props> = ({ navigation }) => {
       setPassword('');
       setConfirmPassword('');
       setDistrict('');
-      setOfficerRole('');
       navigation.navigate('AdminDashboard');
     } catch (err: any) {
       const message = err.response?.data?.message || 'Failed to create officer account';
@@ -266,24 +260,7 @@ export const CreateOfficerScreen: React.FC<Props> = ({ navigation }) => {
               {errors.district && <Text style={styles.errorText}>{errors.district}</Text>}
             </View>
 
-            {/* Officer Role Field */}
-            <View style={styles.selectContainer}>
-              <Text style={styles.selectLabel}>Officer Role</Text>
-              <TouchableOpacity
-                style={[
-                  styles.selectBox,
-                  errors.officerRole ? styles.selectBoxError : null,
-                ]}
-                onPress={() => setRoleModalVisible(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={officerRole ? styles.selectValueText : styles.selectPlaceholderText}>
-                  {officerRole || 'Select officer role'}
-                </Text>
-                <Ionicons name="chevron-down" size={18} color={Colors.textSecondary} />
-              </TouchableOpacity>
-              {errors.officerRole && <Text style={styles.errorText}>{errors.officerRole}</Text>}
-            </View>
+
 
             <CustomButton
               title="Create Account"
@@ -334,44 +311,7 @@ export const CreateOfficerScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </Modal>
 
-      {/* Officer Role Selection Modal */}
-      <Modal visible={roleModalVisible} transparent animationType="slide">
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Officer Role</Text>
-            <ScrollView style={styles.modalScroll}>
-              {OFFICER_ROLES.map((r) => (
-                <TouchableOpacity
-                  key={r}
-                  style={[
-                    styles.modalItem,
-                    officerRole === r && styles.modalItemActive,
-                  ]}
-                  onPress={() => {
-                    setOfficerRole(r);
-                    setRoleModalVisible(false);
-                    if (errors.officerRole) setErrors({ ...errors, officerRole: undefined });
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.modalItemText,
-                      officerRole === r && styles.modalItemTextActive,
-                    ]}
-                  >
-                    {r}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <CustomButton
-              title="Cancel"
-              onPress={() => setRoleModalVisible(false)}
-              variant="secondary"
-            />
-          </View>
-        </View>
-      </Modal>
+
     </SafeAreaView>
   );
 };
