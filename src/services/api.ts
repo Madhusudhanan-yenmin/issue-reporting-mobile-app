@@ -14,7 +14,7 @@ const getBaseUrl = () => {
     }
   }
   // Use the local laptop IP directly for physical phone connections
-  return 'http://10.12.64.175:3000/api';
+  return 'http://192.168.0.104:3000/api';
 };
 
 const baseUrl = getBaseUrl();
@@ -54,6 +54,10 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response && error.response.status === 401) {
+      const url = error.config?.url || '';
+      if (url.includes('/auth/change-password') || url.includes('/auth/login')) {
+        return Promise.reject(error);
+      }
       if (logoutCallback) {
         logoutCallback();
       } else {
