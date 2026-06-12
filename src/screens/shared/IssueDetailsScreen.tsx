@@ -726,44 +726,41 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Assign Officer</Text>
             <ScrollView style={styles.modalScroll}>
-              {officers.length === 0 ? (
-                <Text style={styles.emptyText}>No officers available.</Text>
-              ) : (
-                [...officers]
-                  .sort((a, b) => {
-                    const issueDistrict = selectedIssue?.district || '';
-                    const aMatches = issueDistrict && a.district?.toLowerCase() === issueDistrict.toLowerCase();
-                    const bMatches = issueDistrict && b.district?.toLowerCase() === issueDistrict.toLowerCase();
-                    if (aMatches && !bMatches) return -1;
-                    if (!aMatches && bMatches) return 1;
-                    return 0;
-                  })
-                  .map((officer) => {
-                    const isRecommended = selectedIssue?.district && officer.district?.toLowerCase() === selectedIssue.district.toLowerCase();
-                    return (
-                      <TouchableOpacity
-                        key={officer._id}
-                        style={[
-                          styles.officerCardItem,
-                          isRecommended && styles.recommendedOfficerCardItem,
-                        ]}
-                        onPress={() => handleAssignOfficer(officer._id)}
-                        activeOpacity={0.7}
-                      >
-                        <View style={styles.officerItemHeader}>
-                          <Text style={styles.officerItemName}>{officer.name}</Text>
-                          {isRecommended && (
-                            <View style={styles.recommendedBadge}>
-                              <Text style={styles.recommendedBadgeText}>✨ Recommended</Text>
-                            </View>
-                          )}
-                        </View>
-                        <Text style={styles.officerItemRole}>{officer.officerRole || 'Sanitation/Maintenance Officer'}</Text>
-                        <Text style={styles.officerItemDistrict}>District: {officer.district || 'Not Assigned'}</Text>
-                      </TouchableOpacity>
-                    );
-                  })
-              )}
+              {(() => {
+                const issueDistrict = selectedIssue?.district || '';
+                const recommendedOfficers = officers.filter(
+                  (o) => issueDistrict && o.district?.toLowerCase() === issueDistrict.toLowerCase()
+                );
+
+                if (recommendedOfficers.length === 0) {
+                  return (
+                    <Text style={styles.emptyText}>
+                      No recommended officers available in {issueDistrict || 'this'} district.
+                    </Text>
+                  );
+                }
+
+                return recommendedOfficers.map((officer) => (
+                  <TouchableOpacity
+                    key={officer._id}
+                    style={[
+                      styles.officerCardItem,
+                      styles.recommendedOfficerCardItem,
+                    ]}
+                    onPress={() => handleAssignOfficer(officer._id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.officerItemHeader}>
+                      <Text style={styles.officerItemName}>{officer.name}</Text>
+                      <View style={styles.recommendedBadge}>
+                        <Text style={styles.recommendedBadgeText}>✨ Recommended</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.officerItemRole}>{officer.officerRole || 'Sanitation/Maintenance Officer'}</Text>
+                    <Text style={styles.officerItemDistrict}>District: {officer.district || 'Not Assigned'}</Text>
+                  </TouchableOpacity>
+                ));
+              })()}
             </ScrollView>
             <CustomButton
               title="Close"
