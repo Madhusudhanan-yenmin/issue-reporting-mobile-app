@@ -23,6 +23,7 @@ export const FeedbackScreen: React.FC<Props> = ({ route, navigation }) => {
   const { issueId } = route.params;
   const dispatch = useAppDispatch();
   const { loading, submitted, error } = useAppSelector((state) => state.feedback);
+  const { selectedIssue } = useAppSelector((state) => state.issue);
 
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState('');
@@ -32,25 +33,33 @@ export const FeedbackScreen: React.FC<Props> = ({ route, navigation }) => {
   }, [dispatch]);
 
   const handleSubmit = () => {
-    // First, close the issue
-    dispatch(updateStatus({ id: issueId, status: 'CLOSED' })).then((action) => {
-      if (updateStatus.fulfilled.match(action)) {
-        // Now submit the feedback
-        dispatch(submitFeedback({ issueId, rating, comment: comment.trim() })).then(
-          (feedbackAction) => {
-            if (submitFeedback.fulfilled.match(feedbackAction)) {
-              dispatch(fetchIssues()); // Refresh issues list
-              dispatch(showToast({ message: 'Your feedback has been submitted, and the issue is officially closed.', type: 'success' }));
-              navigation.navigate('UserHome');
-            } else {
-              dispatch(showToast({ message: (feedbackAction.payload as string) || 'Failed to submit rating', type: 'error' }));
-            }
+    const submitFeedbackAction = () => {
+      dispatch(submitFeedback({ issueId, rating, comment: comment.trim() })).then(
+        (feedbackAction) => {
+          if (submitFeedback.fulfilled.match(feedbackAction)) {
+            dispatch(fetchIssues()); // Refresh issues list
+            dispatch(showToast({ message: 'Your feedback has been submitted, and the issue is officially closed.', type: 'success' }));
+            navigation.navigate('UserHome');
+          } else {
+            dispatch(showToast({ message: (feedbackAction.payload as string) || 'Failed to submit rating', type: 'error' }));
           }
-        );
-      } else {
-        dispatch(showToast({ message: (action.payload as string) || 'Failed to close the issue', type: 'error' }));
-      }
-    });
+        }
+      );
+    };
+
+    if (selectedIssue?.status === 'CLOSED') {
+      // If the issue is already CLOSED, skip status update and directly submit feedback
+      submitFeedbackAction();
+    } else {
+      // First, close the issue
+      dispatch(updateStatus({ id: issueId, status: 'CLOSED' })).then((action) => {
+        if (updateStatus.fulfilled.match(action)) {
+          submitFeedbackAction();
+        } else {
+          dispatch(showToast({ message: (action.payload as string) || 'Failed to close the issue', type: 'error' }));
+        }
+      });
+    }
   };
 
   return (

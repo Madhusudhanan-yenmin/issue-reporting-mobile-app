@@ -510,24 +510,8 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
 
           {/* Render Action Buttons based on status & role */}
           <View style={styles.actionsContainer}>
-            {user?.role === 'ADMIN' && (
+            {user?.role === 'ADMIN' && selectedIssue.status !== 'CLOSED' && (
               <View style={styles.adminActionRow}>
-                <CustomButton
-                  title={
-                    selectedIssue.status === 'REOPENED'
-                      ? 'Assigned Officer for reopend issue'
-                      : selectedIssue.officerId
-                      ? 'Change the officer'
-                      : 'Assign Officer'
-                  }
-                  onPress={() => setAssignModalVisible(true)}
-                  variant="outline"
-                  size="small"
-                  style={[
-                    styles.actionBtn,
-                    (selectedIssue.status === 'REOPENED' || selectedIssue.officerId) && { height: undefined, minHeight: 40, paddingVertical: 4 }
-                  ]}
-                />
                 <CustomButton
                   title="Set Priority"
                   onPress={() => setPriorityModalVisible(true)}
@@ -538,7 +522,7 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
               </View>
             )}
 
-            {selectedIssue.status === 'ASSIGNED' && (isAssignedOfficer || user?.role === 'ADMIN') && (
+            {(selectedIssue.status === 'ASSIGNED' || selectedIssue.status === 'REOPENED') && (isAssignedOfficer || user?.role === 'ADMIN') && (
               <CustomButton
                 title="Start Work"
                 onPress={handleStartWork}
@@ -558,13 +542,15 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
 
             {selectedIssue.status === 'RESOLVED' && (isCreator || user?.role === 'ADMIN') && (
               <View style={styles.adminActionRow}>
-                <CustomButton
-                  title="Close & Feedback"
-                  onPress={handleCloseIssue}
-                  variant="success"
-                  size="small"
-                  style={styles.actionBtn}
-                />
+                {isCreator && (
+                  <CustomButton
+                    title="Close & Feedback"
+                    onPress={handleCloseIssue}
+                    variant="success"
+                    size="small"
+                    style={styles.actionBtn}
+                  />
+                )}
                 <CustomButton
                   title="Reopen Issue"
                   onPress={handleReopenIssue}
@@ -978,6 +964,7 @@ const styles = StyleSheet.create({
   },
   actionsContainer: {
     marginTop: Spacing.sm,
+    gap: Spacing.md,
   },
   adminActionRow: {
     flexDirection: 'row',
