@@ -96,6 +96,7 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
 
   const [images, setImages] = useState<string[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [fetchingLocation, setFetchingLocation] = useState(false);
   const [customCategory, setCustomCategory] = useState('');
   const [errors, setErrors] = useState<{
@@ -851,10 +852,24 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
             <View style={styles.imageRow}>
               {images.map((img, idx) => (
                 <View key={idx} style={styles.imagePreviewContainer}>
-                  <Image source={{ uri: img }} style={styles.imagePreview} />
+                  <TouchableOpacity
+                    onPress={() => setPreviewImage(img)}
+                    activeOpacity={0.8}
+                    style={styles.imageClickable}
+                  >
+                    <Image source={{ uri: img }} style={styles.imagePreview} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.previewImageBadge}
+                    onPress={() => setPreviewImage(img)}
+                    activeOpacity={0.7}
+                  >
+                    <Ionicons name="eye" size={10} color="#FFFFFF" />
+                  </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.removeImageBadge}
                     onPress={() => handleRemoveImage(idx)}
+                    activeOpacity={0.7}
                   >
                     <Text style={styles.removeText}>X</Text>
                   </TouchableOpacity>
@@ -1008,6 +1023,38 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Image Preview Modal */}
+      <Modal
+        visible={!!previewImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPreviewImage(null)}
+      >
+        <View style={styles.previewModalBackdrop}>
+          <TouchableOpacity
+            style={styles.previewModalCloseArea}
+            activeOpacity={1}
+            onPress={() => setPreviewImage(null)}
+          />
+          <View style={styles.previewModalContent}>
+            {previewImage && (
+              <Image
+                source={{ uri: previewImage }}
+                style={styles.previewModalImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+          <TouchableOpacity
+            style={styles.previewModalCloseButton}
+            onPress={() => setPreviewImage(null)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="close-circle" size={44} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1091,10 +1138,26 @@ const styles = StyleSheet.create({
     borderRadius: Radii.sm,
     position: 'relative',
   },
+  imageClickable: {
+    width: '100%',
+    height: '100%',
+  },
   imagePreview: {
     width: '100%',
     height: '100%',
     borderRadius: Radii.sm,
+  },
+  previewImageBadge: {
+    position: 'absolute',
+    bottom: -5,
+    left: -5,
+    backgroundColor: Colors.primary,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
   },
   removeImageBadge: {
     position: 'absolute',
@@ -1106,11 +1169,44 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 10,
   },
   removeText: {
     color: '#FFFFFF',
     fontSize: 10,
     fontWeight: 'bold',
+  },
+  previewModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  previewModalCloseArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  previewModalContent: {
+    width: '90%',
+    height: '75%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewModalImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: Radii.md,
+  },
+  previewModalCloseButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 1000,
+    padding: Spacing.sm,
   },
   uploadTrigger: {
     width: 60,

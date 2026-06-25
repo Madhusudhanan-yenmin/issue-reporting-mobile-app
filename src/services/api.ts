@@ -3,7 +3,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform, NativeModules } from 'react-native';
 
 const getBaseUrl = () => {
-  // If running in Expo Go on a physical device, scriptURL holds the dev machine's local IP (e.g. 192.168.0.110)
+  // First attempt to get the API URL from the environment variable
+  if (process.env.EXPO_PUBLIC_API_URL) {
+    return process.env.EXPO_PUBLIC_API_URL;
+  }
+
+  // Fallback to dynamic resolution if running in Expo Go on a physical device
   const scriptURL = NativeModules.SourceCode?.scriptURL;
   if (scriptURL) {
     const address = scriptURL.split('://')[1];
@@ -14,7 +19,7 @@ const getBaseUrl = () => {
     }
   }
   // Use the local laptop IP directly for physical phone connections
-  return 'http://192.168.0.104:3000/api';
+  return 'http://192.168.0.125:3000/api';
 };
 
 const baseUrl = getBaseUrl();
