@@ -12,8 +12,10 @@ import {
   Alert,
   Modal,
   TextInput,
+  PanResponder,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as Location from 'expo-location';
 import MapView from 'react-native-maps';
 import { useAppDispatch, useAppSelector } from '../../store';
@@ -107,6 +109,63 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
     address?: string;
     customCategory?: string;
   }>({});
+
+  // Crop Editor State
+  const [croppingImageUri, setCroppingImageUri] = useState<string | null>(null);
+  const [croppingImageName, setCroppingImageName] = useState<string>('');
+  const [croppingImageType, setCroppingImageType] = useState<string>('');
+  const [cropBox, setCropBox] = useState({ x: 60, y: 60 });
+  const cropBoxSize = 180;
+
+  const [imgLayout, setImgLayout] = useState({
+    displayedWidth: 300,
+    displayedHeight: 300,
+    leftOffset: 0,
+    topOffset: 0,
+    origWidth: 0,
+    origHeight: 0,
+  });
+
+  const imgLayoutRef = useRef(imgLayout);
+  useEffect(() => {
+    imgLayoutRef.current = imgLayout;
+  }, [imgLayout]);
+
+  const cropBoxRef = useRef(cropBox);
+  useEffect(() => {
+    cropBoxRef.current = cropBox;
+  }, [cropBox]);
+
+  const dragStart = useRef({ boxX: 0, boxY: 0 });
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        dragStart.current = {
+          boxX: cropBoxRef.current.x,
+          boxY: cropBoxRef.current.y,
+        };
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        const layout = imgLayoutRef.current;
+        const newX = Math.max(
+          layout.leftOffset,
+          Math.min(
+            layout.leftOffset + layout.displayedWidth - cropBoxSize,
+            dragStart.current.boxX + gestureState.dx
+          )
+        );
+        const newY = Math.max(
+          layout.topOffset,
+          Math.min(
+            layout.topOffset + layout.displayedHeight - cropBoxSize,
+            dragStart.current.boxY + gestureState.dy
+          )
+        );
+        setCropBox({ x: newX, y: newY });
+      },
+    })
+  ).current;
 
   // Voice Recording State
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
@@ -262,7 +321,7 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
     }
   };
 
-  const pickImage = async (skipCrop = false) => {
+  const pickImage = async () => {
     // Ask permission
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -272,17 +331,54 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: !skipCrop,
+      allowsEditing: false,
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const asset = result.assets[0];
-      uploadSelectedImage(asset.uri, asset.fileName || undefined, asset.mimeType || undefined);
+      const uri = asset.uri;
+      
+      Image.getSize(uri, (width, height) => {
+        let displayedWidth = 300;
+        let displayedHeight = 300;
+        let leftOffset = 0;
+        let topOffset = 0;
+        
+        if (width / height > 1) { // Landscape
+          displayedHeight = 300 * (height / width);
+          topOffset = (300 - displayedHeight) / 2;
+        } else { // Portrait
+          displayedWidth = 300 * (width / height);
+          leftOffset = (300 - displayedWidth) / 2;
+        }
+        
+        setImgLayout({
+          displayedWidth,
+          displayedHeight,
+          leftOffset,
+          topOffset,
+          origWidth: width,
+          origHeight: height,
+        });
+        
+        // Center the crop box
+        setCropBox({
+          x: 150 - cropBoxSize / 2,
+          y: 150 - cropBoxSize / 2,
+        });
+        
+        setCroppingImageUri(uri);
+        setCroppingImageName(asset.fileName || 'photo.jpg');
+        setCroppingImageType(asset.mimeType || 'image/jpeg');
+      }, (err) => {
+        // Fallback to direct upload if size fails
+        uploadSelectedImage(uri, asset.fileName || undefined, asset.mimeType || undefined);
+      });
     }
   };
 
-  const takePhoto = async (skipCrop = false) => {
+  const takePhoto = async () => {
     const { status } = await ImagePicker.requestCameraPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Denied', 'Permission to access camera is required!');
@@ -290,36 +386,92 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: !skipCrop,
+      allowsEditing: false,
       quality: 0.8,
     });
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const asset = result.assets[0];
-      uploadSelectedImage(asset.uri, asset.fileName || undefined, asset.mimeType || undefined);
+      const uri = asset.uri;
+      
+      Image.getSize(uri, (width, height) => {
+        let displayedWidth = 300;
+        let displayedHeight = 300;
+        let leftOffset = 0;
+        let topOffset = 0;
+        
+        if (width / height > 1) { // Landscape
+          displayedHeight = 300 * (height / width);
+          topOffset = (300 - displayedHeight) / 2;
+        } else { // Portrait
+          displayedWidth = 300 * (width / height);
+          leftOffset = (300 - displayedWidth) / 2;
+        }
+        
+        setImgLayout({
+          displayedWidth,
+          displayedHeight,
+          leftOffset,
+          topOffset,
+          origWidth: width,
+          origHeight: height,
+        });
+        
+        // Center the crop box
+        setCropBox({
+          x: 150 - cropBoxSize / 2,
+          y: 150 - cropBoxSize / 2,
+        });
+        
+        setCroppingImageUri(uri);
+        setCroppingImageName(asset.fileName || 'photo.jpg');
+        setCroppingImageType(asset.mimeType || 'image/jpeg');
+      }, (err) => {
+        // Fallback to direct upload if size fails
+        uploadSelectedImage(uri, asset.fileName || undefined, asset.mimeType || undefined);
+      });
     }
   };
 
-  const promptCropOption = (onSelect: (skipCrop: boolean) => void) => {
-    Alert.alert(
-      'Crop Option',
-      'Do you want to crop the photo or skip cropping?',
-      [
-        {
-          text: 'Crop Photo ✂️',
-          onPress: () => onSelect(false),
-        },
-        {
-          text: 'Skip Crop ⏩',
-          onPress: () => onSelect(true),
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ],
-      { cancelable: true }
-    );
+  const handlePerformCrop = async () => {
+    if (!croppingImageUri) return;
+    try {
+      setUploadingImage(true);
+      const scale = imgLayout.origWidth / imgLayout.displayedWidth;
+      const cropX = Math.round((cropBox.x - imgLayout.leftOffset) * scale);
+      const cropY = Math.round((cropBox.y - imgLayout.topOffset) * scale);
+      const cropWidth = Math.round(cropBoxSize * scale);
+      const cropHeight = Math.round(cropBoxSize * scale);
+
+      const manipulated = await ImageManipulator.manipulateAsync(
+        croppingImageUri,
+        [
+          {
+            crop: {
+              originX: Math.max(0, cropX),
+              originY: Math.max(0, cropY),
+              width: Math.min(imgLayout.origWidth - cropX, cropWidth),
+              height: Math.min(imgLayout.origHeight - cropY, cropHeight),
+            },
+          },
+        ],
+        { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+      );
+
+      await uploadSelectedImage(manipulated.uri, croppingImageName, croppingImageType);
+    } catch (err: any) {
+      Alert.alert('Crop Failed', 'An error occurred while cropping the image.');
+    } finally {
+      setCroppingImageUri(null);
+      setUploadingImage(false);
+    }
+  };
+
+  const handleSkipCrop = () => {
+    if (croppingImageUri) {
+      uploadSelectedImage(croppingImageUri, croppingImageName, croppingImageType);
+    }
+    setCroppingImageUri(null);
   };
 
   const handleImageAttachment = () => {
@@ -329,11 +481,11 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
       [
         {
           text: 'Take Photo 📸',
-          onPress: () => promptCropOption((skipCrop) => takePhoto(skipCrop)),
+          onPress: () => takePhoto(),
         },
         {
           text: 'Choose from Gallery 🖼️',
-          onPress: () => promptCropOption((skipCrop) => pickImage(skipCrop)),
+          onPress: () => pickImage(),
         },
         {
           text: 'Cancel',
@@ -1055,6 +1207,87 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </Modal>
+
+      {/* Visual Image Crop Modal */}
+      <Modal
+        visible={!!croppingImageUri}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCroppingImageUri(null)}
+      >
+        <View style={styles.cropModalBackdrop}>
+          <View style={styles.cropModalContent}>
+            <Text style={styles.cropModalTitle}>Adjust Grievance Photo</Text>
+            <Text style={styles.cropModalInstructions}>
+              Drag the square overlay to frame the issue correctly.
+            </Text>
+
+            {/* Cropping Canvas Area */}
+            <View style={styles.cropCanvas}>
+              {croppingImageUri && (
+                <Image
+                  source={{ uri: croppingImageUri }}
+                  style={[
+                    styles.cropTargetImage,
+                    {
+                      width: imgLayout.displayedWidth,
+                      height: imgLayout.displayedHeight,
+                      left: imgLayout.leftOffset,
+                      top: imgLayout.topOffset,
+                    },
+                  ]}
+                  resizeMode="stretch"
+                />
+              )}
+              
+              {/* Semi-transparent dimming overlays around the crop box */}
+              {/* Top mask */}
+              <View style={[styles.cropMask, { top: 0, left: 0, right: 0, height: cropBox.y }]} />
+              {/* Bottom mask */}
+              <View style={[styles.cropMask, { bottom: 0, left: 0, right: 0, top: cropBox.y + cropBoxSize }]} />
+              {/* Left mask */}
+              <View style={[styles.cropMask, { top: cropBox.y, left: 0, width: cropBox.x, height: cropBoxSize }]} />
+              {/* Right mask */}
+              <View style={[styles.cropMask, { top: cropBox.y, left: cropBox.x + cropBoxSize, right: 0, height: cropBoxSize }]} />
+
+              {/* Draggable Crop Box Overlay */}
+              <View
+                {...panResponder.panHandlers}
+                style={[
+                  styles.cropBox,
+                  {
+                    left: cropBox.x,
+                    top: cropBox.y,
+                    width: cropBoxSize,
+                    height: cropBoxSize,
+                  },
+                ]}
+              >
+                {/* Border corners styling */}
+                <View style={[styles.cropCorner, { top: 0, left: 0, borderTopWidth: 3, borderLeftWidth: 3 }]} />
+                <View style={[styles.cropCorner, { top: 0, right: 0, borderTopWidth: 3, borderRightWidth: 3 }]} />
+                <View style={[styles.cropCorner, { bottom: 0, left: 0, borderBottomWidth: 3, borderLeftWidth: 3 }]} />
+                <View style={[styles.cropCorner, { bottom: 0, right: 0, borderBottomWidth: 3, borderRightWidth: 3 }]} />
+              </View>
+            </View>
+
+            {/* Actions Bar */}
+            <View style={styles.cropActionsBar}>
+              <CustomButton
+                title="Skip Crop"
+                variant="secondary"
+                onPress={handleSkipCrop}
+                style={styles.cropActionBtn}
+              />
+              <CustomButton
+                title="Crop Photo ✂️"
+                onPress={handlePerformCrop}
+                style={styles.cropActionBtn}
+              />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -1495,5 +1728,70 @@ const styles = StyleSheet.create({
     fontSize: Typography.size.sm,
     fontWeight: Typography.weight.medium,
     marginLeft: Spacing.xs,
+  },
+  cropModalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cropModalContent: {
+    width: '90%',
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: Spacing.xl,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+    alignItems: 'center',
+  },
+  cropModalTitle: {
+    color: Colors.textPrimary,
+    fontSize: Typography.size.lg,
+    fontWeight: Typography.weight.bold,
+    marginBottom: Spacing.xs,
+    textAlign: 'center',
+  },
+  cropModalInstructions: {
+    color: Colors.textSecondary,
+    fontSize: Typography.size.sm,
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
+  },
+  cropCanvas: {
+    width: 300,
+    height: 300,
+    backgroundColor: '#000000',
+    borderRadius: Radii.md,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  cropTargetImage: {
+    position: 'absolute',
+  },
+  cropMask: {
+    position: 'absolute',
+    backgroundColor: 'rgba(0, 0, 0, 0.65)',
+  },
+  cropBox: {
+    position: 'absolute',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    backgroundColor: 'transparent',
+    zIndex: 20,
+  },
+  cropCorner: {
+    position: 'absolute',
+    width: 16,
+    height: 16,
+    borderColor: Colors.primaryLight,
+  },
+  cropActionsBar: {
+    flexDirection: 'row',
+    width: '100%',
+    gap: Spacing.md,
+    marginTop: Spacing.xl,
+  },
+  cropActionBtn: {
+    flex: 1,
   },
 });
