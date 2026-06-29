@@ -51,8 +51,18 @@ export const ForgotPasswordScreen: React.FC<Props> = ({ navigation }) => {
       setError(null);
       
       const response = await api.post('/auth/forgot-password', { email: email.trim() });
-      
-      dispatch(showToast({ message: 'Reset code sent! Use mock code "1234".', type: 'info' }));
+      const { isMocked, otp, previewUrl } = response.data;
+
+      if (isMocked) {
+        if (previewUrl) {
+          console.log(`[Ethereal Email Preview URL]: ${previewUrl}`);
+          dispatch(showToast({ message: `SMTP not configured. Sent to Ethereal. Mock OTP is "${otp}".`, type: 'info' }));
+        } else {
+          dispatch(showToast({ message: `SMTP not configured. Use mock code "${otp}".`, type: 'info' }));
+        }
+      } else {
+        dispatch(showToast({ message: 'Reset code sent to your email!', type: 'success' }));
+      }
       navigation.navigate('ResetPassword', { email: email.trim(), isForgotPasswordFlow: true });
     } catch (err: any) {
       const message = err.response?.data?.message || 'Failed to send reset link. Please try again.';

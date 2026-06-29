@@ -67,8 +67,8 @@ export const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
     if (!isDirectReset) {
       if (!otp) {
         tempErrors.otp = 'Reset Code (OTP) is required';
-      } else if (otp.trim() !== '1234') {
-        tempErrors.otp = 'Invalid Reset Code. Use mock code 1234';
+      } else if (!/^\d{4}$/.test(otp.trim())) {
+        tempErrors.otp = 'OTP must be a 4-digit number';
       }
     }
     
@@ -198,7 +198,7 @@ export const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
             {!isDirectReset && (
               <CustomInput
                 label="Reset Code (OTP)"
-                placeholder="Enter mock code 1234"
+                placeholder="Enter 4-digit OTP"
                 value={otp}
                 onChangeText={(text) => {
                   setOtp(text);
