@@ -1,6 +1,6 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useMemo,  useEffect, useRef } from 'react';
 import { View, StyleSheet, Text, Animated, Easing } from 'react-native';
-import { Colors, Typography, Spacing } from '../theme';
+import { useTheme, Typography, Spacing } from '../theme';
 
 interface LoadingIndicatorProps {
   message?: string;
@@ -11,6 +11,8 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   message,
   fullScreen = false,
 }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const rotateValue = useRef(new Animated.Value(0)).current;
   const pulseValue = useRef(new Animated.Value(0.6)).current;
 
@@ -91,7 +93,7 @@ export const LoadingIndicator: React.FC<LoadingIndicatorProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   container: {
     justifyContent: 'center',
     alignItems: 'center',

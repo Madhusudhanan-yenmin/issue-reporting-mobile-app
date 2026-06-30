@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo,  useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -8,7 +8,7 @@ import {
   ScrollView,
   SafeAreaView,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radii } from '../theme';
+import { useTheme, Typography, Spacing, Radii } from '../theme';
 
 interface FilterModalProps {
   visible: boolean;
@@ -57,6 +57,8 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   categoryCounts = {},
   statusCounts = {},
 }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const [activeTab, setActiveTab] = useState<'category' | 'status'>('category');
   const [tempCategory, setTempCategory] = useState(selectedCategory);
   const [tempStatus, setTempStatus] = useState(selectedStatus);
@@ -230,7 +232,7 @@ export const FilterModal: React.FC<FilterModalProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   backdrop: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.6)',

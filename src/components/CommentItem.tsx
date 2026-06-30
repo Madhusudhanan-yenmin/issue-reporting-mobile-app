@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo,  useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, Typography, Spacing, Radii, Shadows } from '../theme';
+import { useTheme, Typography, Spacing, Radii, Shadows } from '../theme';
 import { Comment } from '../store/slices/commentSlice';
 
 interface CommentItemProps {
@@ -8,6 +8,8 @@ interface CommentItemProps {
 }
 
 export const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
@@ -95,7 +97,7 @@ export const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   container: {
     backgroundColor: Colors.surfaceElevated,
     borderRadius: Radii.md,

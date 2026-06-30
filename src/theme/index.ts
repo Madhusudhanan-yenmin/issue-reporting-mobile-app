@@ -1,5 +1,7 @@
+import { useAppSelector } from '../store';
+
 // Design tokens for the Issue Reporting app
-export const Colors = {
+export const DarkColors = {
   // Brand primaries
   primary: '#4F6EF7',
   primaryDark: '#3A54D4',
@@ -63,6 +65,82 @@ export const Colors = {
   inputBorder: '#2E3347',
   inputBorderFocused: '#4F6EF7',
   placeholder: '#5C6480',
+};
+
+export const LightColors = {
+  // Brand primaries
+  primary: '#4F6EF7',
+  primaryDark: '#3A54D4',
+  primaryLight: '#7B95FF',
+
+  // Accents
+  accent: '#00D4AA',
+  accentDark: '#00A880',
+
+  // Backgrounds
+  background: '#F3F4F6',
+  surface: '#FFFFFF',
+  surfaceElevated: '#F9FAFB',
+  surfaceBorder: '#E5E7EB',
+
+  // Text
+  textPrimary: '#111827',
+  textSecondary: '#4B5563',
+  textMuted: '#9CA3AF',
+  textInverted: '#FFFFFF',
+
+  // Status colors
+  success: '#22C55E',
+  successBg: '#DCFCE7',
+  warning: '#F59E0B',
+  warningBg: '#FEF3C7',
+  error: '#EF4444',
+  errorBg: '#FEE2E2',
+  info: '#3B82F6',
+  infoBg: '#DBEAFE',
+
+  // Issue Status palette
+  statusOpen: '#4F6EF7',
+  statusAssigned: '#A78BFA',
+  statusInProgress: '#F59E0B',
+  statusResolved: '#22C55E',
+  statusReopened: '#F97316',
+  statusClosed: '#6B7280',
+
+  // Priority palette
+  priorityLow: '#16A34A',
+  priorityMedium: '#D97706',
+  priorityHigh: '#EA580C',
+  priorityCritical: '#DC2626',
+
+  // Category icon colors
+  categoryRoad: '#2563EB',
+  categoryWater: '#059669',
+  categoryElectricity: '#D97706',
+  categoryGarbage: '#7C3AED',
+  categoryDrainage: '#EA580C',
+  categoryOther: '#4B5563',
+
+  // Navigation
+  tabActive: '#4F6EF7',
+  tabInactive: '#9CA3AF',
+  tabBar: '#FFFFFF',
+
+  // Input
+  inputBg: '#FFFFFF',
+  inputBorder: '#D1D5DB',
+  inputBorderFocused: '#4F6EF7',
+  placeholder: '#9CA3AF',
+};
+
+// Static export for fallback compatibility
+export const Colors = DarkColors;
+
+// React Hook to access theme values dynamically
+export const useTheme = () => {
+  const theme = useAppSelector((state) => state.ui.theme || 'dark');
+  const colors = theme === 'light' ? LightColors : DarkColors;
+  return { theme, colors };
 };
 
 export const Typography = {

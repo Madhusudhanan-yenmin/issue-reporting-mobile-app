@@ -1,15 +1,16 @@
-import React, { useEffect } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import React, { useEffect, useMemo } from 'react';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useAppDispatch, useAppSelector } from '../store';
 import { loadSession, logout } from '../store/slices/authSlice';
+import { loadPersistedTheme, toggleTheme } from '../store/slices/uiSlice';
 import { LoadingIndicator } from '../components/LoadingIndicator';
-import { Colors } from '../theme';
+import { useTheme } from '../theme';
 import { setLogoutCallback } from '../services/api';
 import { TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-
+import { StatusBar } from 'expo-status-bar';
 
 // Navigation Param Lists
 import {
@@ -43,191 +44,243 @@ const AdminTab = createBottomTabNavigator<AdminTabParamList>();
 const OfficerTab = createBottomTabNavigator<OfficerTabParamList>();
 
 // Auth Navigator
-const AuthNavigator = () => (
-  <AuthStack.Navigator
-    screenOptions={{
-      headerShown: false,
-      cardStyle: { backgroundColor: Colors.background },
-    }}
-  >
-    <AuthStack.Screen name="Login" component={LoginScreen} />
-    <AuthStack.Screen name="Register" component={RegisterScreen} />
-    <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
-    <AuthStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
-  </AuthStack.Navigator>
-);
+const AuthNavigator = () => {
+  const { colors } = useTheme();
+  return (
+    <AuthStack.Navigator
+      screenOptions={{
+        headerShown: false,
+        cardStyle: { backgroundColor: colors.background },
+      }}
+    >
+      <AuthStack.Screen name="Login" component={LoginScreen} />
+      <AuthStack.Screen name="Register" component={RegisterScreen} />
+      <AuthStack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+      <AuthStack.Screen name="ResetPassword" component={ResetPasswordScreen} />
+    </AuthStack.Navigator>
+  );
+};
 
 // User Bottom Tab Navigator
-const UserTabNavigator = () => (
-  <UserTab.Navigator
-    screenOptions={{
-      tabBarActiveTintColor: Colors.tabActive,
-      tabBarInactiveTintColor: Colors.tabInactive,
-      tabBarStyle: {
-        backgroundColor: Colors.tabBar,
-        borderTopColor: Colors.surfaceBorder,
-      },
-      headerStyle: {
-        backgroundColor: Colors.tabBar,
-        shadowColor: 'transparent',
-      },
-      headerTintColor: Colors.textPrimary,
-    }}
-  >
-    <UserTab.Screen
-      name="UserDashboard"
-      component={UserDashboardScreen}
-      options={{
-        title: 'Dashboard',
-        tabBarIcon: ({ color, size, focused }) => (
-          <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
-        ),
+const UserTabNavigator = () => {
+  const { colors } = useTheme();
+  return (
+    <UserTab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: colors.tabActive,
+        tabBarInactiveTintColor: colors.tabInactive,
+        tabBarStyle: {
+          backgroundColor: colors.tabBar,
+          borderTopColor: colors.surfaceBorder,
+        },
+        headerStyle: {
+          backgroundColor: colors.tabBar,
+          shadowColor: 'transparent',
+        },
+        headerTintColor: colors.textPrimary,
+        headerRight: () => <HeaderThemeToggle />,
       }}
-    />
-    <UserTab.Screen
-      name="CreateIssue"
-      component={CreateIssueScreen}
-      options={{
-        title: 'Report Issue',
-        tabBarIcon: ({ color, size, focused }) => (
-          <Ionicons name={focused ? 'add-circle' : 'add-circle-outline'} size={size} color={color} />
-        ),
-      }}
-    />
-    <UserTab.Screen
-      name="UserProfile"
-      component={UserProfileScreen}
-      options={{
-        title: 'Profile',
-        tabBarIcon: ({ color, size, focused }) => (
-          <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
-        ),
-      }}
-    />
-  </UserTab.Navigator>
-);
+    >
+      <UserTab.Screen
+        name="UserDashboard"
+        component={UserDashboardScreen}
+        options={{
+          title: 'Dashboard',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+      <UserTab.Screen
+        name="CreateIssue"
+        component={CreateIssueScreen}
+        options={{
+          title: 'Report Issue',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'add-circle' : 'add-circle-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+      <UserTab.Screen
+        name="UserProfile"
+        component={UserProfileScreen}
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+    </UserTab.Navigator>
+  );
+};
 
 // Admin Bottom Tab Navigator
-const AdminTabNavigator = () => (
-  <AdminTab.Navigator
-    screenOptions={{
-      tabBarActiveTintColor: Colors.error, // Red accent for Admin
-      tabBarInactiveTintColor: Colors.tabInactive,
-      tabBarStyle: {
-        backgroundColor: Colors.tabBar,
-        borderTopColor: Colors.surfaceBorder,
-      },
-      headerStyle: {
-        backgroundColor: Colors.tabBar,
-        shadowColor: 'transparent',
-      },
-      headerTintColor: Colors.textPrimary,
-    }}
-  >
-    <AdminTab.Screen
-      name="AdminDashboard"
-      component={AdminDashboardScreen}
-      options={{
-        title: 'Grievances',
-        tabBarIcon: ({ color, size, focused }) => (
-          <Ionicons name={focused ? 'list' : 'list-outline'} size={size} color={color} />
-        ),
+const AdminTabNavigator = () => {
+  const { colors } = useTheme();
+  return (
+    <AdminTab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: colors.error, // Red accent for Admin
+        tabBarInactiveTintColor: colors.tabInactive,
+        tabBarStyle: {
+          backgroundColor: colors.tabBar,
+          borderTopColor: colors.surfaceBorder,
+        },
+        headerStyle: {
+          backgroundColor: colors.tabBar,
+          shadowColor: 'transparent',
+        },
+        headerTintColor: colors.textPrimary,
+        headerRight: () => <HeaderThemeToggle />,
       }}
-    />
-    <AdminTab.Screen
-      name="CreateOfficer"
-      component={CreateOfficerScreen}
-      options={{
-        title: 'Add Officer',
-        tabBarIcon: ({ color, size, focused }) => (
-          <Ionicons name={focused ? 'person-add' : 'person-add-outline'} size={size} color={color} />
-        ),
-      }}
-    />
-    <AdminTab.Screen
-      name="AdminProfile"
-      component={AdminProfileScreen}
-      options={{
-        title: 'Profile',
-        tabBarIcon: ({ color, size, focused }) => (
-          <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
-        ),
-      }}
-    />
-  </AdminTab.Navigator>
-);
+    >
+      <AdminTab.Screen
+        name="AdminDashboard"
+        component={AdminDashboardScreen}
+        options={{
+          title: 'Grievances',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'list' : 'list-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+      <AdminTab.Screen
+        name="CreateOfficer"
+        component={CreateOfficerScreen}
+        options={{
+          title: 'Add Officer',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person-add' : 'person-add-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+      <AdminTab.Screen
+        name="AdminProfile"
+        component={AdminProfileScreen}
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+    </AdminTab.Navigator>
+  );
+};
 
 // Officer Bottom Tab Navigator
-const OfficerTabNavigator = () => (
-  <OfficerTab.Navigator
-    screenOptions={{
-      tabBarActiveTintColor: Colors.warning, // Yellow accent for Officer
-      tabBarInactiveTintColor: Colors.tabInactive,
-      tabBarStyle: {
-        backgroundColor: Colors.tabBar,
-        borderTopColor: Colors.surfaceBorder,
-      },
-      headerStyle: {
-        backgroundColor: Colors.tabBar,
-        shadowColor: 'transparent',
-      },
-      headerTintColor: Colors.textPrimary,
-    }}
-  >
-    <OfficerTab.Screen
-      name="OfficerDashboard"
-      component={OfficerDashboardScreen}
-      options={{
-        title: 'My Work',
-        tabBarIcon: ({ color, size, focused }) => (
-          <Ionicons name={focused ? 'clipboard' : 'clipboard-outline'} size={size} color={color} />
-        ),
+const OfficerTabNavigator = () => {
+  const { colors } = useTheme();
+  return (
+    <OfficerTab.Navigator
+      screenOptions={{
+        tabBarActiveTintColor: colors.warning, // Yellow accent for Officer
+        tabBarInactiveTintColor: colors.tabInactive,
+        tabBarStyle: {
+          backgroundColor: colors.tabBar,
+          borderTopColor: colors.surfaceBorder,
+        },
+        headerStyle: {
+          backgroundColor: colors.tabBar,
+          shadowColor: 'transparent',
+        },
+        headerTintColor: colors.textPrimary,
+        headerRight: () => <HeaderThemeToggle />,
       }}
-    />
-    <OfficerTab.Screen
-      name="OfficerProfile"
-      component={OfficerProfileScreen}
-      options={{
-        title: 'Profile',
-        tabBarIcon: ({ color, size, focused }) => (
-          <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
-        ),
-      }}
-    />
-  </OfficerTab.Navigator>
-);
+    >
+      <OfficerTab.Screen
+        name="OfficerDashboard"
+        component={OfficerDashboardScreen}
+        options={{
+          title: 'My Work',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'clipboard' : 'clipboard-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+      <OfficerTab.Screen
+        name="OfficerProfile"
+        component={OfficerProfileScreen}
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={size} color={color} />
+          ),
+        }}
+      />
+    </OfficerTab.Navigator>
+  );
+};
+
+const HeaderThemeToggle = () => {
+  const dispatch = useAppDispatch();
+  const { theme, colors } = useTheme();
+  return (
+    <TouchableOpacity
+      onPress={() => { dispatch(toggleTheme()); }}
+      style={{ marginRight: 16, padding: 6 }}
+      activeOpacity={0.7}
+    >
+      <Ionicons
+        name={theme === 'dark' ? 'sunny-outline' : 'moon-outline'}
+        size={22}
+        color={theme === 'dark' ? '#FBBF24' : colors.primary}
+      />
+    </TouchableOpacity>
+  );
+};
 
 export const AppNavigator = () => {
   const dispatch = useAppDispatch();
   const { isAuthenticated, user, isSessionLoading } = useAppSelector((state) => state.auth);
+  const { theme, colors } = useTheme();
 
   useEffect(() => {
     dispatch(loadSession());
+    dispatch(loadPersistedTheme());
     // Attach API unauthorized auto-logout
     setLogoutCallback(() => {
       dispatch(logout());
     });
   }, [dispatch]);
 
+  const navTheme = useMemo(() => ({
+    ...DefaultTheme,
+    dark: theme === 'dark',
+    colors: {
+      ...DefaultTheme.colors,
+      primary: colors.primary,
+      background: colors.background,
+      card: colors.tabBar,
+      text: colors.textPrimary,
+      border: colors.surfaceBorder,
+      notification: colors.accent,
+    },
+  }), [theme, colors]);
+
+  const styles = useMemo(() => getStyles(colors), [colors]);
+
   if (isSessionLoading) {
     return <LoadingIndicator message="Authenticating session..." fullScreen />;
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={navTheme}>
+      <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
       <RootStack.Navigator
         screenOptions={{
           headerStyle: {
-            backgroundColor: Colors.tabBar,
+            backgroundColor: colors.tabBar,
             shadowColor: 'transparent',
           },
-          headerTintColor: Colors.textPrimary,
+          headerTintColor: colors.textPrimary,
           headerLeft: ({ onPress }) => (
             <TouchableOpacity onPress={onPress} style={styles.headerBackButton} activeOpacity={0.7}>
-              <Ionicons name="chevron-back" size={22} color={Colors.primary} />
+              <Ionicons name="chevron-back" size={22} color={colors.primary} />
             </TouchableOpacity>
           ),
-          cardStyle: { backgroundColor: Colors.background },
+          cardStyle: { backgroundColor: colors.background },
         }}
       >
         {!isAuthenticated ? (
@@ -283,16 +336,16 @@ export const AppNavigator = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (colors: any) => StyleSheet.create({
   headerBackButton: {
     marginLeft: 16,
     marginRight: 16,
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: Colors.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: Colors.surfaceBorder,
+    borderColor: colors.surfaceBorder,
     justifyContent: 'center',
     alignItems: 'center',
     paddingRight: 2,

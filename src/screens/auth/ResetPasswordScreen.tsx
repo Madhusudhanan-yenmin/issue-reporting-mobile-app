@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo,  useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { CustomButton } from '../../components/CustomButton';
 import { CustomInput } from '../../components/CustomInput';
-import { Colors, Typography, Spacing, Radii } from '../../theme';
+import { useTheme, Typography, Spacing, Radii } from '../../theme';
 import { Ionicons } from '@expo/vector-icons';
 import { StackScreenProps } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/types';
@@ -24,6 +24,8 @@ import { showToast } from '../../store/slices/uiSlice';
 type Props = StackScreenProps<any, 'ResetPassword'>;
 
 export const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const dispatch = useAppDispatch();
   const { isAuthenticated } = useAppSelector((state) => state.auth);
   const emailParam = route.params?.email || '';
@@ -261,7 +263,7 @@ export const ResetPasswordScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   safeContainer: {
     flex: 1,
     backgroundColor: Colors.background,

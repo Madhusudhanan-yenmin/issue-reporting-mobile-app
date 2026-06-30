@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useMemo,  useState, useRef, useEffect } from 'react';
 import { Audio, Video, ResizeMode } from 'expo-av';
 import {
   StyleSheet,
@@ -23,7 +23,7 @@ import { createIssue } from '../../store/slices/issueSlice';
 import { showToast } from '../../store/slices/uiSlice';
 import { CustomButton } from '../../components/CustomButton';
 import { CustomInput } from '../../components/CustomInput';
-import { Colors, Typography, Spacing, Radii, Shadows } from '../../theme';
+import { useTheme, Typography, Spacing, Radii, Shadows } from '../../theme';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -80,6 +80,8 @@ const DISTRICTS = [
 ];
 
 export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const dispatch = useAppDispatch();
   const { loading } = useAppSelector((state) => state.issue);
 
@@ -95,6 +97,7 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
   const [latitude, setLatitude] = useState<number | undefined>(undefined);
   const [longitude, setLongitude] = useState<number | undefined>(undefined);
   const [districtModalVisible, setDistrictModalVisible] = useState(false);
+  const [imagePickerVisible, setImagePickerVisible] = useState(false);
 
   const [images, setImages] = useState<string[]>([]);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -475,25 +478,7 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
   };
 
   const handleImageAttachment = () => {
-    Alert.alert(
-      'Attach Image',
-      'Select the source for your grievance photo:',
-      [
-        {
-          text: 'Take Photo 📸',
-          onPress: () => takePhoto(),
-        },
-        {
-          text: 'Choose from Gallery 🖼️',
-          onPress: () => pickImage(),
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-      ],
-      { cancelable: true }
-    );
+    setImagePickerVisible(true);
   };
 
   const uploadSelectedImage = async (uri: string, assetName?: string, assetType?: string) => {
@@ -1288,11 +1273,158 @@ export const CreateIssueScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Beautiful Custom Image Source Selector Popup */}
+      <Modal
+        visible={imagePickerVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setImagePickerVisible(false)}
+      >
+        <View style={styles.imagePickerModalOverlay}>
+          <TouchableOpacity 
+            style={styles.imagePickerModalDismissOverlay} 
+            activeOpacity={1} 
+            onPress={() => setImagePickerVisible(false)} 
+          />
+          <View style={styles.imagePickerModalContent}>
+            <View style={styles.imagePickerModalHeader}>
+              <Text style={styles.imagePickerModalTitle}>Attach Image</Text>
+              <TouchableOpacity onPress={() => setImagePickerVisible(false)} activeOpacity={0.7}>
+                <Ionicons name="close" size={24} color={Colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.imagePickerModalSubtitle}>
+              Select the source for your grievance photo:
+            </Text>
+            
+            <TouchableOpacity 
+              style={styles.imagePickerModalOptionButton} 
+              activeOpacity={0.8}
+              onPress={() => {
+                setImagePickerVisible(false);
+                takePhoto();
+              }}
+            >
+              <View style={[styles.imagePickerModalOptionIconContainer, { backgroundColor: Colors.primary + '15' }]}>
+                <Ionicons name="camera" size={24} color={Colors.primary} />
+              </View>
+              <Text style={styles.imagePickerModalOptionText}>Take Photo 📸</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.imagePickerModalOptionButton} 
+              activeOpacity={0.8}
+              onPress={() => {
+                setImagePickerVisible(false);
+                pickImage();
+              }}
+            >
+              <View style={[styles.imagePickerModalOptionIconContainer, { backgroundColor: Colors.accent + '15' }]}>
+                <Ionicons name="images" size={24} color={Colors.accent} />
+              </View>
+              <Text style={styles.imagePickerModalOptionText}>Choose from Gallery 🖼️</Text>
+            </TouchableOpacity>
+
+            <View style={styles.imagePickerModalDivider} />
+
+            <TouchableOpacity 
+              style={styles.imagePickerModalCancelButton} 
+              activeOpacity={0.85}
+              onPress={() => setImagePickerVisible(false)}
+            >
+              <Ionicons name="close-circle-outline" size={20} color={Colors.error} style={{ marginRight: 8 }} />
+              <Text style={styles.imagePickerModalCancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
+  imagePickerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    justifyContent: 'flex-end',
+  },
+  imagePickerModalDismissOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+  },
+  imagePickerModalContent: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: Radii.xl,
+    borderTopRightRadius: Radii.xl,
+    padding: Spacing.xl,
+    paddingBottom: Spacing.xxl + 10,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+  },
+  imagePickerModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.xs,
+  },
+  imagePickerModalTitle: {
+    fontSize: Typography.size.lg,
+    fontWeight: Typography.weight.bold,
+    color: Colors.textPrimary,
+  },
+  imagePickerModalSubtitle: {
+    fontSize: Typography.size.sm,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.lg,
+    marginTop: Spacing.xs,
+  },
+  imagePickerModalOptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    backgroundColor: Colors.background,
+    borderRadius: Radii.md,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.surfaceBorder,
+  },
+  imagePickerModalOptionIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: Radii.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.md,
+  },
+  imagePickerModalOptionText: {
+    fontSize: Typography.size.base,
+    fontWeight: Typography.weight.semiBold,
+    color: Colors.textPrimary,
+  },
+  imagePickerModalDivider: {
+    height: 1,
+    backgroundColor: Colors.surfaceBorder,
+    marginVertical: Spacing.md,
+  },
+  imagePickerModalCancelButton: {
+    flexDirection: 'row',
+    height: 48,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.errorBg || 'rgba(239, 68, 68, 0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.error + '30',
+  },
+  imagePickerModalCancelButtonText: {
+    fontSize: Typography.size.base,
+    fontWeight: Typography.weight.bold,
+    color: Colors.error,
+  },
   container: {
     flex: 1,
     backgroundColor: Colors.background,

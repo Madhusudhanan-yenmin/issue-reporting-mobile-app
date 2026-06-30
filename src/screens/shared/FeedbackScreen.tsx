@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo,  useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -13,13 +13,15 @@ import { submitFeedback, clearFeedback } from '../../store/slices/feedbackSlice'
 import { updateStatus, fetchIssues } from '../../store/slices/issueSlice';
 import { showToast } from '../../store/slices/uiSlice';
 import { CustomButton } from '../../components/CustomButton';
-import { Colors, Typography, Spacing, Radii } from '../../theme';
+import { useTheme, Typography, Spacing, Radii } from '../../theme';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/types';
 
 type Props = StackScreenProps<RootStackParamList, 'Feedback'>;
 
 export const FeedbackScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const { issueId } = route.params;
   const dispatch = useAppDispatch();
   const { loading, submitted, error } = useAppSelector((state) => state.feedback);
@@ -123,7 +125,7 @@ export const FeedbackScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,

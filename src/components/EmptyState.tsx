@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import { Colors, Typography, Spacing } from '../theme';
+import { useTheme, Typography, Spacing } from '../theme';
 import { CustomButton } from './CustomButton';
 
 interface EmptyStateProps {
@@ -18,6 +18,8 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   onActionPress,
   style,
 }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   return (
     <View style={[styles.container, style]}>
       <Text style={styles.title}>{title}</Text>
@@ -35,7 +37,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   container: {
     padding: Spacing.xxl,
     alignItems: 'center',

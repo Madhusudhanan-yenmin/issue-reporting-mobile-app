@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo,  useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, Radii } from '../theme';
+import { useTheme, Typography, Spacing, Radii } from '../theme';
 
 interface CustomInputProps extends TextInputProps {
   label?: string;
@@ -27,6 +27,8 @@ export const CustomInput = React.forwardRef<TextInput, CustomInputProps>(({
   style,
   ...props
 }, ref) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -75,7 +77,7 @@ export const CustomInput = React.forwardRef<TextInput, CustomInputProps>(({
 
 CustomInput.displayName = 'CustomInput';
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   container: {
     marginBottom: Spacing.base,
     width: '100%',

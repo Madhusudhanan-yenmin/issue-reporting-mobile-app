@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   TouchableOpacity,
   Text,
@@ -8,7 +8,7 @@ import {
   TextStyle,
   StyleProp,
 } from 'react-native';
-import { Colors, Typography, Spacing, Radii, Shadows } from '../theme';
+import { useTheme, Typography, Spacing, Radii, Shadows } from '../theme';
 
 interface CustomButtonProps {
   title: string;
@@ -31,6 +31,8 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
   style,
   textStyle,
 }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const getButtonStyles = () => {
     const stylesList: ViewStyle[] = [styles.button];
 
@@ -101,7 +103,7 @@ export const CustomButton: React.FC<CustomButtonProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   button: {
     borderRadius: Radii.md,
     justifyContent: 'center',

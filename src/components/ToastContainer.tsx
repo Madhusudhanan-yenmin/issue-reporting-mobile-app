@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useMemo,  useEffect, useRef } from 'react';
 import { StyleSheet, View, Text, Animated, TouchableOpacity, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors, Typography, Spacing, Shadows } from '../theme';
+import { useTheme, Typography, Spacing, Shadows } from '../theme';
 import { useAppDispatch, useAppSelector } from '../store';
 import { dismissToast } from '../store/slices/uiSlice';
 
@@ -12,6 +12,8 @@ interface ToastItemProps {
 }
 
 const ToastItem: React.FC<ToastItemProps> = ({ id, message, type }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const dispatch = useAppDispatch();
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(-20)).current;
@@ -136,6 +138,8 @@ const ToastItem: React.FC<ToastItemProps> = ({ id, message, type }) => {
 };
 
 export const ToastContainer: React.FC = () => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const toasts = useAppSelector((state) => state.ui.toasts);
 
   if (toasts.length === 0) return null;
@@ -151,7 +155,7 @@ export const ToastContainer: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   container: {
     position: 'absolute',
     top: 50,

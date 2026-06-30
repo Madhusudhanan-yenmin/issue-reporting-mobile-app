@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useMemo,  useEffect, useState, useCallback, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -33,7 +33,7 @@ import { ActivityItem } from '../../components/ActivityItem';
 import { CommentItem } from '../../components/CommentItem';
 import { LoadingIndicator } from '../../components/LoadingIndicator';
 import { CustomButton } from '../../components/CustomButton';
-import { Colors, Typography, Spacing, Radii, Shadows } from '../../theme';
+import { useTheme, Typography, Spacing, Radii, Shadows } from '../../theme';
 import { StackScreenProps } from '@react-navigation/stack';
 import { RootStackParamList } from '../../navigation/types';
 import api from '../../services/api';
@@ -41,6 +41,8 @@ import api from '../../services/api';
 type Props = StackScreenProps<RootStackParamList, 'IssueDetails'>;
 
 export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const { issueId } = route.params;
   const dispatch = useAppDispatch();
   
@@ -858,7 +860,7 @@ export const IssueDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: Colors.background,

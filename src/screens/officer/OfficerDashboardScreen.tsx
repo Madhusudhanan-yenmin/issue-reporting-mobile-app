@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useMemo,  useEffect, useState, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -15,7 +15,7 @@ import { fetchIssues } from '../../store/slices/issueSlice';
 import { IssueCard } from '../../components/IssueCard';
 import { LoadingIndicator } from '../../components/LoadingIndicator';
 import { EmptyState } from '../../components/EmptyState';
-import { Colors, Typography, Spacing, Radii } from '../../theme';
+import { useTheme, Typography, Spacing, Radii } from '../../theme';
 import { FilterModal } from '../../components/FilterModal';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
@@ -31,6 +31,8 @@ const CATEGORIES = ['ALL', 'ROAD', 'WATER', 'ELECTRICITY', 'GARBAGE', 'DRAINAGE'
 const STATUSES = ['ALL', 'ASSIGNED', 'IN_PROGRESS', 'RESOLVED'];
 
 export const OfficerDashboardScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const dispatch = useAppDispatch();
   const { issues, loading } = useAppSelector((state) => state.issue);
   const { user } = useAppSelector((state) => state.auth);
@@ -187,7 +189,7 @@ export const OfficerDashboardScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,

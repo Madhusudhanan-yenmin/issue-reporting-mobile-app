@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo,  useState } from 'react';
 import {
   StyleSheet,
   View,
@@ -14,7 +14,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { CustomButton } from '../../components/CustomButton';
 import { CustomInput } from '../../components/CustomInput';
-import { Colors, Typography, Spacing } from '../../theme';
+import { useTheme, Typography, Spacing } from '../../theme';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { StackScreenProps } from '@react-navigation/stack';
@@ -77,6 +77,8 @@ const OFFICER_ROLES = [
 ];
 
 export const CreateOfficerScreen: React.FC<Props> = ({ navigation }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const dispatch = useAppDispatch();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -316,7 +318,7 @@ export const CreateOfficerScreen: React.FC<Props> = ({ navigation }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,

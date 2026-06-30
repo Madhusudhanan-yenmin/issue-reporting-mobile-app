@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo,  useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Colors, Typography, Spacing, Radii, Shadows } from '../theme';
+import { useTheme, Typography, Spacing, Radii, Shadows } from '../theme';
 import { Activity } from '../store/slices/issueSlice';
 
 interface ActivityItemProps {
@@ -12,6 +12,8 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
   activity,
   isLast = false,
 }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const [showTooltip, setShowTooltip] = useState(false);
 
   useEffect(() => {
@@ -107,7 +109,7 @@ export const ActivityItem: React.FC<ActivityItemProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     marginBottom: Spacing.sm,

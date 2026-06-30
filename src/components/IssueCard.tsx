@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { Colors, Typography, Spacing, Radii, Shadows } from '../theme';
+import { useTheme, Typography, Spacing, Radii, Shadows } from '../theme';
 import { Issue } from '../store/slices/issueSlice';
 
 interface IssueCardProps {
@@ -9,6 +9,8 @@ interface IssueCardProps {
 }
 
 export const IssueCard: React.FC<IssueCardProps> = ({ issue, onPress }) => {
+  const { colors: Colors } = useTheme();
+  const styles = useMemo(() => getStyles(Colors), [Colors]);
   const getStatusColor = (status: Issue['status']) => {
     switch (status) {
       case 'OPEN':
@@ -112,7 +114,7 @@ export const IssueCard: React.FC<IssueCardProps> = ({ issue, onPress }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (Colors: any) => StyleSheet.create({
   card: {
     backgroundColor: Colors.surface,
     borderRadius: Radii.md,
